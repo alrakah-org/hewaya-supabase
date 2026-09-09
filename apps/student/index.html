@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>هواية</title>
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#352868">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="هواية">
+<meta name="application-name" content="هواية">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;700;800&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2F6FBF;
+    --indigo:#352868;
+    --violet:#7C5BA6;
+    --pink:#F178A8;
+    --sun:#FFC83C;
+    --rowad-pink:#F6529A;
+    --rowad-orange:#FFA826;
+    --rowad-purple:#68459A;
+    --bg:#F6F4FB;
+    --card:#FFFFFF;
+    --text:#2B2640;
+    --text-muted:#79738F;
+    --error:#D1485B;
+    --success:#2E9E6C;
+    --radius:22px;
+    --nav-h:74px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 88% -6%, rgba(255,200,60,.22), transparent 38%),
+      radial-gradient(circle at -10% 102%, rgba(124,91,166,.16), transparent 42%),
+      var(--bg);
+    font-family:'Almarai', sans-serif;
+    color:var(--text);
+    overflow-x:hidden;
+  }
+  .hidden{display:none !important;}
+
+  /* ===================== انترو التطبيق ===================== */
+  #appIntro{
+    position:fixed;inset:0;z-index:9999;background:#6d60bd;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  #appIntro video{width:100%;height:100%;object-fit:cover;display:block;}
+
+  /* ===================== شاشة التحميل ===================== */
+  #loadingView{
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  }
+  .spinner{
+    width:42px;height:42px;border-radius:50%;
+    border:4px solid #E7E2F2;border-top-color:var(--violet);
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #loadingView p{color:var(--text-muted);font-size:.92rem;}
+
+  /* ===================== شاشة تسجيل الدخول ===================== */
+  #loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;}
+  .login-card{
+    width:100%;max-width:420px;background:var(--card);border-radius:var(--radius);
+    padding:30px 26px 34px;box-shadow:0 18px 50px -12px rgba(53,40,104,.22);
+  }
+  .logo{display:block;width:100%;max-width:170px;margin:0 auto 16px;}
+  .welcome-pill{
+    display:block;width:fit-content;margin:0 auto 16px;padding:7px 18px;border-radius:999px;
+    background:linear-gradient(95deg, var(--pink), var(--violet));
+    color:#fff;font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:.82rem;
+  }
+  .login-card h1{font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.45rem;color:var(--indigo);text-align:center;margin:0 0 6px;}
+  .login-card .subtitle{text-align:center;color:var(--text-muted);font-size:.9rem;margin:0 0 22px;}
+  label{display:block;font-size:.88rem;font-weight:700;color:var(--indigo);margin-bottom:16px;}
+  input{
+    width:100%;margin-top:8px;padding:13px 14px;border-radius:14px;
+    border:2px solid #E7E2F2;background:#FBFAFD;
+    font-family:'Almarai', sans-serif;font-size:1rem;color:var(--text);
+    outline:none;transition:border-color .15s ease;
+  }
+  input:focus{border-color:var(--blue);}
+  input[type="checkbox"], input[type="radio"]{width:20px;height:20px;margin:0;padding:0;flex-shrink:0;accent-color:var(--violet);}
+  button{
+    width:100%;padding:15px;border:none;border-radius:999px;
+    font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.05rem;
+    color:#fff;cursor:pointer;background:linear-gradient(95deg, var(--blue), var(--violet));
+    box-shadow:0 10px 24px -8px rgba(47,111,191,.55);
+    transition:transform .12s ease;
+  }
+  button:active{transform:translateY(1px) scale(.99);}
+  button:disabled{opacity:.65;cursor:not-allowed;}
+  .error{color:var(--error);font-size:.85rem;text-align:center;min-height:1.2em;margin:14px 0 0;font-weight:700;}
+
+  /* زر تثبيت التطبيق */
+  .install-btn{
+    display:block;width:fit-content;margin:0 auto 14px;
+    padding:9px 18px;border-radius:999px;border:none;
+    background:#F3F0FA;color:var(--indigo);
+    font-family:'Almarai', sans-serif;font-weight:700;font-size:.82rem;
+    box-shadow:none;cursor:pointer;
+  }
+  .install-btn:active{transform:translateY(1px) scale(.99);}
+
+  /* نوافذ شرح التثبيت (آيفون / عام) ونافذة تكبير صورة الإعلان */
+  .ios-install-overlay{
+    position:fixed;inset:0;background:rgba(43,38,64,.55);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;z-index:60;
+  }
+  .ios-install-card{
+    background:#fff;border-radius:20px;padding:24px 20px;max-width:340px;width:100%;
+    box-shadow:0 18px 50px -12px rgba(53,40,104,.35);
+  }
+  .ios-install-card h3{
+    font-family:'Baloo Bhaijaan 2', sans-serif;font-size:1.1rem;color:var(--indigo);
+    text-align:center;margin:0 0 16px;
+  }
+  .ios-install-card p{
+    font-size:.92rem;color:var(--text);margin:0 0 12px;line-height:1.6;
+    display:flex;align-items:flex-start;gap:8px;
+  }
+  .ios-step-num{
+    flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;
+    background:var(--violet);color:#fff;font-size:.75rem;font-weight:700;
+  }
+  .ios-share-icon{font-size:1rem;}
+  .ios-install-card button{margin-top:8px;}
+  .btn-secondary{background:#F3F0FA;color:var(--indigo);box-shadow:none;margin-top:10px;}
+
+  /* ===================== التطبيق الرئيسي ===================== */
+  #appView{min-height:100vh;display:flex;flex-direction:column;}
+
+  .brand-logos{display:flex;align-items:center;justify-content:center;gap:12px;direction:rtl;}
+  .brand-logos .app-logo{max-height:68px;width:auto;object-fit:contain;}
+  .brand-logos .logo{margin:0;}
+  .brand-logos .rowad-logo{max-height:62px;max-width:132px;width:auto;object-fit:contain;}
+  .app-header .brand-logos{justify-content:flex-start;gap:9px;flex-shrink:0;}
+  .app-header .brand-logos .app-logo{height:36px;max-height:36px;cursor:pointer;}
+  .app-header .brand-logos .rowad-logo{height:34px;max-height:34px;max-width:76px;}
+
+  /* الشريط العلوي: الشعار + ترحيب صغير بجانبه، مباشرة على خلفية الصفحة */
+  .app-header{padding:14px 18px 6px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .header-logo{height:46px;width:auto;display:inline-block;flex-shrink:0;}
+  .header-welcome{font-size:.8rem;font-weight:700;color:var(--indigo);text-align:left;}
+
+  .pages-viewport{flex:1;position:relative;overflow:hidden;}
+  .page-panel{
+    position:absolute;inset:0;overflow-y:auto;
+    padding:18px 16px calc(var(--nav-h) + 70px);
+    -webkit-overflow-scrolling:touch;overscroll-behavior-y:auto;
+    transform:translateX(100%);transition:transform .4s cubic-bezier(.22,.61,.36,1);display:none;
+  }
+  .page-panel[data-page="0"]{display:block;transform:translateX(0);}
+
+  .section-card{
+    background:var(--card);border-radius:var(--radius);padding:22px 20px;
+    box-shadow:0 14px 38px -16px rgba(53,40,104,.18);margin-bottom:16px;
+    border-top:3px solid rgba(246,82,154,.20);
+  }
+  .section-card:nth-of-type(3n+2){border-top-color:rgba(255,168,38,.30);}
+  .section-card:nth-of-type(3n){border-top-color:rgba(104,69,154,.25);}
+  .section-title{
+    font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.15rem;color:var(--indigo);margin:0 0 6px;
+    display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;
+  }
+  .lb-your-rank{font-family:'Almarai', sans-serif;font-weight:700;font-size:.72rem;color:var(--text-muted);}
+  .section-sub{color:var(--text-muted);font-size:.86rem;margin:0 0 16px;line-height:1.6;}
+
+  /* قائمة العشرة الأوائل */
+  .leaderboard-hidden-msg{
+    text-align:center;padding:26px 16px;font-weight:800;color:var(--violet);
+    font-size:1rem;background:#FBFAFD;border-radius:16px;
+  }
+  .leaderboard-scroll{
+    display:flex;gap:12px;overflow-x:auto;padding:6px 2px 10px;
+    scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;
+  }
+  .leaderboard-scroll::-webkit-scrollbar{height:0;}
+  .leader-card{
+    flex:0 0 84px;scroll-snap-align:start;text-align:center;
+    background:#FBFAFD;border:2px solid #EFEAF8;border-radius:16px;padding:10px 6px;
+  }
+  .leader-rank{
+    font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:800;font-size:.74rem;color:#fff;
+    background:linear-gradient(95deg, var(--blue), var(--violet));border-radius:999px;
+    display:inline-block;padding:2px 9px;margin-bottom:6px;
+  }
+  .leader-rank.top1{background:linear-gradient(95deg, var(--sun), #FFD976);color:#5A4300;}
+  .leader-photo{
+    width:50px;height:50px;border-radius:12px;margin:0 auto 6px;background-size:cover;background-position:center;
+    background-color:#EFEAF8;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:2px solid #fff;
+  }
+  .leader-name{font-size:.72rem;font-weight:800;color:var(--indigo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .leader-stage{font-size:.64rem;color:var(--text-muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+  .lb-empty{color:var(--text-muted);font-size:.82rem;padding:6px 2px;}
+
+  /* الإعلانات والجوائز — صف عام */
+  /* الإعلان الأحدث — يطلع بحجم أكبر وضوحًا، يضغط عليه لفتح الصورة كاملة */
+  .announcement-featured{
+    border-radius:18px;overflow:hidden;margin-bottom:14px;background:#FBFAFD;border:2px solid #EFEAF8;
+  }
+  .announcement-featured-img{
+    width:100%;height:170px;background-size:cover;background-position:center;cursor:pointer;
+  }
+  .announcement-featured-body{padding:14px 16px;}
+
+  .reward-item{
+    display:flex;align-items:center;gap:14px;padding:14px;border-radius:18px;
+    background:#FBFAFD;border:2px solid #EFEAF8;margin-bottom:12px;
+  }
+  .reward-emoji{font-size:1.8rem;flex-shrink:0;width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+    background:#fff;border-radius:14px;border:2px solid #EFEAF8;}
+  .reward-name{font-weight:800;color:var(--indigo);font-size:.95rem;}
+  .reward-desc{font-size:.8rem;color:var(--text-muted);margin-top:2px;}
+
+  /* أزرار/شارات الجوائز */
+  .reward-buy-btn{
+    flex-shrink:0;width:auto;padding:9px 18px;font-size:.85rem;border-radius:999px;
+    background:linear-gradient(95deg, var(--blue), var(--violet));color:#fff;box-shadow:none;
+  }
+  .reward-badge{flex-shrink:0;font-size:.72rem;font-weight:800;padding:7px 12px;border-radius:999px;white-space:nowrap;text-align:center;}
+  .reward-badge.sold-out{background:#FBE9ED;color:var(--error);}
+  .reward-badge.insufficient{background:#F3F0FA;color:var(--text-muted);}
+
+  /* بطاقة بيانات الطالب */
+  .student-id-card{
+    position:relative;border-radius:24px;overflow:hidden;
+    background:linear-gradient(145deg, #FFF8EE 0%, #FFF0F7 46%, #EEE8FA 100%);
+    border:2px solid rgba(104,69,154,.16);
+    box-shadow:0 18px 42px -22px rgba(104,69,154,.55);
+    padding:18px;margin-top:4px;min-height:220px;
+  }
+  .student-id-card::before,.student-id-card::after{
+    content:'';position:absolute;border-radius:50%;pointer-events:none;
+  }
+  .student-id-card::before{width:150px;height:150px;background:rgba(246,82,154,.11);top:-78px;right:-56px;}
+  .student-id-card::after{width:125px;height:125px;background:rgba(255,168,38,.16);bottom:-72px;left:-42px;}
+  .membership-card-header{
+    position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;
+    gap:18px;padding-bottom:13px;margin-bottom:16px;border-bottom:1px solid rgba(104,69,154,.16);
+  }
+  .membership-title{font-family:'Baloo Bhaijaan 2',sans-serif;font-size:1.18rem;font-weight:800;color:var(--rowad-purple);}
+  .membership-title small{display:block;font-family:'Almarai',sans-serif;font-size:.68rem;color:var(--rowad-pink);margin-top:-2px;}
+  .student-id-logo{
+    position:static;height:42px;max-width:92px;width:auto;object-fit:contain;
+  }
+  .student-id-card-inner{
+    position:relative;z-index:1;display:flex;align-items:flex-start;gap:17px;
+  }
+  .student-id-photo{
+    flex-shrink:0;width:96px;height:112px;border-radius:20px;
+    background-size:cover;background-position:center;background-color:#fff;
+    border:4px solid #fff;box-shadow:0 10px 24px -12px rgba(53,40,104,.6);
+    display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:var(--rowad-purple);
+  }
+  .student-id-info{flex:1;min-width:0;text-align:right;}
+  .student-id-name{
+    font-weight:800;font-size:1.08rem;color:var(--rowad-purple);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:9px;
+  }
+  .student-detail-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid rgba(104,69,154,.10);}
+  .student-detail-label{font-size:.7rem;font-weight:700;color:#8D829D;}
+  .student-id-stage,.student-id-id,.student-id-rank{font-size:.79rem;font-weight:800;color:#33254B;}
+  .student-id-id span{font-size:.79rem;font-weight:800;color:#33254B;margin:0;}
+  .membership-card-footer{position:relative;z-index:1;margin-top:14px;height:5px;border-radius:999px;background:linear-gradient(90deg,var(--rowad-purple),var(--rowad-pink),var(--rowad-orange));}
+
+  /* المعلومات / الرصيد */
+  .balance-box{text-align:center;padding:10px 0 4px;}
+  .balance-num{font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:800;font-size:3rem;color:var(--indigo);line-height:1;}
+  .balance-lbl{color:var(--text-muted);font-size:.88rem;margin-top:4px;}
+  .refresh-btn{
+    width:auto;display:block;margin:18px auto 0;padding:10px 22px;font-size:.88rem;
+    background:#F3F0FA;color:var(--indigo);box-shadow:none;
+  }
+  .info-photo-wrap{display:flex;justify-content:center;margin-bottom:14px;}
+  .info-avatar{
+    width:76px;height:76px;border-radius:18px;background-size:cover;background-position:center;
+    background-color:#F3F0FA;display:flex;align-items:center;justify-content:center;font-size:2rem;
+    border:2px solid #E7E2F2;
+  }
+  .info-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #EFEAF8;}
+  .info-row:last-child{border-bottom:none;}
+  .info-row .k{color:var(--text-muted);font-size:.86rem;}
+  .info-row .v{font-weight:800;color:var(--indigo);font-size:.92rem;}
+
+  /* نقاطي — الإنجازات */
+  .achievement-row{
+    display:flex;align-items:center;gap:10px;padding:13px;border-radius:14px;
+    background:#FBFAFD;border:2px solid #EFEAF8;margin-bottom:10px;cursor:pointer;
+  }
+  .achievement-row.done{background:#EAF7EF;border-color:#BEE6CC;cursor:default;}
+  .achievement-checks{display:flex;gap:9px;align-items:center;}
+  .achievement-checks input{width:22px;height:22px;margin:0;accent-color:var(--violet);}
+  .achievement-checks input{appearance:none;-webkit-appearance:none;border:2px solid #CFC5DE;border-radius:50%;background:#fff;display:grid;place-content:center;cursor:pointer;}
+  .achievement-checks input::before{content:'✓';font-size:14px;font-weight:900;color:#fff;transform:scale(0);transition:transform .12s ease;}
+  .achievement-checks input:checked{background:linear-gradient(135deg,var(--rowad-purple),var(--rowad-pink));border-color:transparent;}
+  .achievement-checks input:checked::before{transform:scale(1);}
+  .week-label{text-align:center;font-family:'Baloo Bhaijaan 2',sans-serif;font-size:1.25rem;font-weight:800;color:var(--rowad-purple);margin-bottom:10px;}
+  .day-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+  .day-tab{border:2px solid #E9E1F3;background:#fff;color:var(--rowad-purple);border-radius:14px;padding:9px 5px;font-weight:800;box-shadow:none;margin:0;}
+  .day-tab.active{background:linear-gradient(95deg,var(--rowad-purple),var(--rowad-pink));color:#fff;border-color:transparent;}
+  .day-tab:disabled{opacity:.38;cursor:not-allowed;}
+  .activity-details{font-size:.7rem;color:var(--text-muted);line-height:1.7;margin-top:3px;}
+  .attendance-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+  .attendance-actions button{margin:0;padding:12px 8px;font-size:.86rem;}
+  .attendance-normal-btn{background:linear-gradient(95deg,var(--blue),var(--violet));}
+  .attendance-early-btn{background:linear-gradient(95deg,var(--rowad-pink),var(--rowad-purple));}
+  .group-member-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #EFEAF8;}
+  .group-member-row:last-child{border-bottom:none;}
+  .group-member-row.me{background:#F3F0FA;margin:0 -10px;padding:11px 10px;border-radius:12px;}
+  .achievement-label{flex:1;font-weight:700;color:var(--indigo);font-size:.9rem;}
+  .achievement-points{
+    font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:800;font-size:.82rem;color:#A9700A;
+    background:#FFF3DA;padding:4px 11px;border-radius:999px;flex-shrink:0;
+  }
+  .locked-box{text-align:center;padding:26px 10px;}
+  .locked-box .ic{font-size:2.2rem;margin-bottom:10px;}
+
+  /* سجل النقاط */
+  .log-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #EFEAF8;font-size:.86rem;}
+  .log-row:last-child{border-bottom:none;}
+  .log-reason{font-weight:700;color:var(--indigo);font-size:.86rem;}
+  .log-date{color:var(--text-muted);font-size:.74rem;margin-top:2px;}
+  .log-amount{font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:800;flex-shrink:0;font-size:.95rem;}
+
+  /* تابعنا — سناب شات فقط، متمركز بمنتصف الصفحة */
+  .snap-only-card{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;min-height:62vh;
+  }
+  .snap-link{text-decoration:none;}
+  .snap-icon-circle{
+    width:118px;height:118px;border-radius:50%;background:#FFFC00;
+    display:flex;align-items:center;justify-content:center;font-size:3.1rem;
+    box-shadow:0 16px 38px -10px rgba(0,0,0,.28);transition:transform .15s ease;
+  }
+  .snap-icon-circle:active{transform:scale(.95);}
+  .snap-caption{
+    font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.15rem;
+    color:var(--indigo);margin-top:20px;
+  }
+  .logout-btn{background:#FBE9ED;color:var(--error);box-shadow:none;margin-top:34px;}
+
+  /* القائمة السفلية */
+  .bottom-nav{
+    position:fixed;bottom:0;right:0;left:0;height:var(--nav-h);
+    background:var(--card);box-shadow:0 -10px 30px -18px rgba(53,40,104,.35);
+    display:flex;align-items:stretch;z-index:30;
+    border-radius:24px 24px 0 0;
+  }
+  .nav-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:none;border:none;box-shadow:none;color:var(--text-muted);width:auto;padding:8px 0;
+    font-family:'Almarai', sans-serif;font-size:.62rem;font-weight:700;cursor:pointer;border-radius:0;
+  }
+  .nav-btn .nav-ic-img{width:27px;height:27px;object-fit:contain;transition:transform .2s ease, opacity .2s ease;opacity:.5;}
+  .nav-btn.active .nav-ic-img{transform:translateY(-2px);opacity:1;}
+  .nav-btn.active{color:var(--indigo);}
+
+  /* تأكيد الشراء يطلع جنب زر الشراء مباشرة، بدون أي نافذة منبثقة أو تنبيه عائم */
+  .reward-confirm-row{display:flex;gap:6px;flex-shrink:0;}
+  .reward-confirm-btn{
+    width:auto;padding:8px 14px;font-size:.8rem;border-radius:999px;box-shadow:none;
+    background:linear-gradient(95deg, var(--blue), var(--violet));color:#fff;
+  }
+  .reward-cancel-btn{
+    width:auto;padding:8px 10px;font-size:.8rem;border-radius:999px;box-shadow:none;
+    background:#F3F0FA;color:var(--indigo);
+  }
+
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
+</style>
+</head>
+<body>
+
+<!-- يظهر مرة واحدة عند فتح التطبيق، ويعمل صامتًا -->
+<div id="appIntro">
+  <video id="appIntroVideo" autoplay muted playsinline preload="auto" aria-label="مقدمة تطبيق هواية">
+    <source src="intro.mp4?v=20260905b" type="video/mp4">
+  </video>
+</div>
+
+<!-- ===================== صفحة نهاية البرنامج ===================== -->
+<div id="programEndedView" class="hidden">
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;">
+    <div class="brand-logos" style="margin-bottom:28px;"><img class="app-logo" alt="هواية"><img class="rowad-logo" src="rowad-hawaya-logo.png" alt="رواد هواية"></div>
+    <div style="font-size:3.2rem;margin-bottom:18px;">🎉</div>
+    <h1 style="font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.7rem;color:var(--indigo);margin:0 0 14px;line-height:1.5;">
+      انتهى البرنامج!
+    </h1>
+    <p style="font-size:1.05rem;color:var(--text);font-weight:700;line-height:1.9;max-width:340px;margin:0;">
+      شكرًا لكل لحظة قضيتها معنا هذا الصيف ✨<br>
+      وننتظركم في برنامج <span style="color:var(--violet);">هواية</span><br>
+      مع بداية العام الدراسي 📚🌟
+    </p>
+  </div>
+</div>
+
+<!-- ===================== شاشة التحميل ===================== -->
+<div id="loadingView">
+  <div class="spinner"></div>
+  <p>جاري التحقق من حسابك...</p>
+</div>
+
+<!-- ===================== شاشة تسجيل الدخول ===================== -->
+<div id="loginView" class="hidden">
+  <div class="login-card">
+    <div class="brand-logos" style="margin-bottom:16px;"><img class="logo app-logo" alt="هواية"><img class="rowad-logo" src="rowad-hawaya-logo.png" alt="رواد هواية"></div>
+    <h1>تسجيل الدخول</h1>
+    <p class="subtitle">أدخل رقمك وكلمة السر من بطاقتك</p>
+    <form id="loginForm">
+      <label>رقم الطالب (ID)<input type="text" id="loginId" inputmode="numeric" placeholder="مثال: 0537" required></label>
+      <label>الرقم السري (PIN)<input type="text" id="loginPw" inputmode="numeric" placeholder="مثال: 4821" required></label>
+      <button type="submit" id="loginBtn">دخول</button>
+      <p class="error" id="loginError"></p>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة شرح التثبيت على آيفون -->
+<div id="iosInstallOverlay" class="ios-install-overlay hidden">
+  <div class="ios-install-card">
+    <h3>📱 تثبيت التطبيق على آيفون</h3>
+    <p><span class="ios-step-num">1</span> اضغط زر المشاركة <span class="ios-share-icon">⬆️</span> بالأسفل بمتصفح Safari</p>
+    <p><span class="ios-step-num">2</span> دوّر لتحت واختر <b>"إضافة إلى الشاشة الرئيسية"</b></p>
+    <p><span class="ios-step-num">3</span> اضغط <b>"إضافة"</b> فوق يمين الشاشة</p>
+    <button type="button" id="closeIosHint" class="btn-secondary">حسنًا، فهمت</button>
+  </div>
+</div>
+
+<!-- نافذة شرح التثبيت العامة (أندرويد/متصفحات أخرى لو لم يدعم التثبيت التلقائي) -->
+<div id="genericInstallOverlay" class="ios-install-overlay hidden">
+  <div class="ios-install-card">
+    <h3>📲 تثبيت التطبيق</h3>
+    <p><span class="ios-step-num">1</span> اضغط على أيقونة القائمة <b>⋮</b> بأعلى يمين المتصفح</p>
+    <p><span class="ios-step-num">2</span> اختر <b>"تثبيت التطبيق"</b> أو <b>"إضافة إلى الشاشة الرئيسية"</b></p>
+    <button type="button" id="closeGenericHint" class="btn-secondary">حسنًا، فهمت</button>
+  </div>
+</div>
+
+<!-- نافذة تكبير صورة الإعلان — اضغط بأي مكان للإغلاق -->
+<div id="imageLightbox" class="ios-install-overlay hidden">
+  <img id="lightboxImg" style="max-width:100%;max-height:88vh;border-radius:16px;display:block;" src="" alt="">
+</div>
+
+<!-- ===================== التطبيق ===================== -->
+<div id="appView" class="hidden">
+  <div class="app-header">
+    <div class="brand-logos"><img class="app-logo header-logo" id="appRefreshLogo" role="button" tabindex="0" title="تحديث التطبيق" alt="هواية — اضغط للتحديث"><img class="rowad-logo" src="rowad-hawaya-logo.png" alt="رواد هواية"></div>
+    <div class="header-welcome" id="headerWelcome"></div>
+  </div>
+
+  <div class="pages-viewport" id="pagesViewport">
+
+    <!-- 0) الرئيسية -->
+    <div class="page-panel" data-page="0">
+      <button type="button" id="installBtn" class="install-btn">📲 تثبيت التطبيق على جوالك</button>
+
+      <div class="section-card">
+        <div class="section-title">📣 الإعلانات</div>
+        <div id="announcementsList"></div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">نصيحة اليوم</div>
+        <div class="section-sub" id="dailyTipText">جاري التحميل...</div>
+      </div>
+    </div>
+
+    <!-- 1) نقاطي -->
+    <div class="page-panel" data-page="1">
+
+      <div class="section-card" id="myGroupCard">
+        <div class="section-title">👥 مجموعتي</div>
+        <div id="myGroupContent"><p class="lb-empty">جاري تحميل المجموعة...</p></div>
+      </div>
+
+      <div class="section-card" id="studentAttendanceCard">
+        <div class="section-title">✅ تسجيل الحضور</div>
+        <div class="section-sub" id="studentAttendanceStatus">جاري التحقق من وقت الحضور...</div>
+        <div class="attendance-actions" id="studentAttendanceActions" style="display:none;">
+          <button type="button" class="attendance-early-btn" data-student-attendance="early">الحضور المبكر</button>
+          <button type="button" class="attendance-normal-btn" data-student-attendance="normal">الحضور العادي</button>
+        </div>
+        <p class="error" id="studentAttendanceMsg"></p>
+      </div>
+
+      <div class="section-card" id="achievementsLockedCard" style="display:none;">
+        <div class="locked-box">
+          <div class="ic">🔒</div>
+          <div style="font-weight:800;color:var(--indigo);margin-bottom:6px;">صفحة نقاطي مقفلة الآن</div>
+          <div style="font-size:.86rem;color:var(--text-muted);" id="achievementsLockedReason"></div>
+        </div>
+      </div>
+
+      <!-- الصفوف الأولى-الثالثة: المعلم يضيف النقاط مباشرة من شاشه -->
+      <div class="section-card" id="achievementsTeacherManagedCard" style="display:none;">
+        <div class="locked-box">
+          <div class="ic">👩‍🏫</div>
+          <div style="font-weight:800;color:var(--indigo);font-size:1.05rem;">تُضاف النقاط من المعلم في وقت البرنامج</div>
+        </div>
+      </div>
+
+      <div id="achievementsContent" style="display:none;">
+        <div class="section-card">
+          <div class="week-label" id="pointsWeekLabel">الأسبوع 1</div>
+          <div class="day-tabs" id="pointsDayTabs"></div>
+          <div class="section-title">⭐ إضافة النقاط</div>
+          <div class="section-sub" id="selectedDayLabel"></div>
+          <div id="dailyAchievementsList"></div>
+        </div>
+
+        <div class="section-card hidden" id="legacyWeeklyCard">
+          <div class="section-title">📅 إنجاز الأسبوع</div>
+          <div class="section-sub">كل إنجاز يُختار مرة واحدة بالأسبوع — يتجدد الأحد الجاي</div>
+          <div id="weeklyAchievementsList"></div>
+        </div>
+
+        <div class="section-card">
+          <button type="button" id="confirmAchievementsBtn">✅ حفظ النقاط</button>
+          <p class="error" id="achievementsMsg"></p>
+        </div>
+        <div class="section-card">
+          <div class="section-title">👥 نشاط مجموعتي</div>
+          <div class="section-sub">الطلاب الذين سجلوا نقاطًا في اليوم المحدد</div>
+          <div id="groupDayActivity"></div>
+        </div>
+      </div>
+
+      <div class="section-card hidden" id="legacyStudentLogCard">
+        <div class="section-title">📜 سجل نقاطي</div>
+        <div id="myPointsLogList"></div>
+        <button type="button" class="refresh-btn" id="refreshLogBtn">🔄 تحديث السجل</button>
+      </div>
+    </div>
+
+    <!-- 2) الجوائز -->
+    <div class="page-panel" data-page="2">
+      <div class="section-card">
+        <div class="section-title">💰 رصيدك</div>
+        <div class="balance-box">
+          <div class="balance-num" id="rewardsBalance">0</div>
+          <div class="balance-lbl">دينار</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">🎁 الجوائز المتاحة</div>
+        <div class="section-sub">اجمع دينارك من الحضور والإنجازات، واستبدله بجوائز حقيقية</div>
+        <p class="error" id="rewardsMsg" style="color:var(--success);display:none;"></p>
+        <div id="rewardsList"></div>
+      </div>
+    </div>
+
+    <!-- 3) المعلومات -->
+    <div class="page-panel" data-page="3" id="studentInfoPage">
+      <div class="section-card hidden" id="infoBalanceCard">
+        <div class="section-title">💰 رصيدي</div>
+        <div class="balance-box">
+          <div class="balance-num" id="infoBalance">0</div>
+          <div class="balance-lbl">دينار</div>
+        </div>
+        <button type="button" class="refresh-btn" id="refreshBalanceBtn">🔄 تحديث الرصيد</button>
+      </div>
+      <div class="section-card" id="membershipCardSection">
+        <div class="student-id-card" id="studentIdCard">
+          <div class="membership-card-header">
+            <div class="membership-title">بطاقة عضوية<small>رواد هواية</small></div>
+            <img class="student-id-logo" src="rowad-hawaya-logo.png" alt="رواد هواية">
+          </div>
+          <div class="student-id-card-inner">
+            <div class="student-id-photo" id="infoAvatar">🧒</div>
+            <div class="student-id-info">
+              <div class="student-id-name" id="infoName"></div>
+              <div class="student-detail-row"><span class="student-detail-label">المرحلة الدراسية</span><div class="student-id-stage" id="infoStage"></div></div>
+              <div class="student-detail-row"><span class="student-detail-label">رقم الطالب</span><div class="student-id-id"><span id="infoId"></span></div></div>
+              <div class="student-id-rank hidden" id="infoRank"></div>
+              </div>
+            </div>
+          <div class="membership-card-footer"></div>
+          </div>
+        <div style="display:flex;justify-content:center;margin-top:12px;">
+          <button type="button" id="changePhotoBtn" class="btn-secondary" style="width:auto;padding:8px 18px;font-size:.8rem;">📷 تغيير الصورة</button>
+          <input type="file" id="changePhotoInput" accept="image/*" class="hidden">
+        </div>
+        <p class="error" id="changePhotoMsg" style="text-align:center;margin-top:8px;"></p>
+      </div>
+    </div>
+
+    <!-- 4) تابعنا -->
+    <div class="page-panel" data-page="4">
+      <div class="section-card snap-only-card">
+        <a class="snap-link" href="https://www.snapchat.com/add/tawnie.raka38?share_id=aAy5gENBzsI&locale=en-GB" target="_blank" rel="noopener">
+          <div class="snap-icon-circle">👻</div>
+        </a>
+        <div class="snap-caption">تابع يوميات هواية ✨</div>
+        <button type="button" class="logout-btn" id="logoutBtn">🚪 تسجيل الخروج</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-index="0" aria-label="الرئيسية"><img class="nav-ic-img" src="nav-home.png" alt=""></button>
+    <button class="nav-btn" data-index="1" aria-label="نقاطي"><img class="nav-ic-img" src="nav-points.png" alt=""></button>
+    <button class="nav-btn" data-index="3" aria-label="المعلومات"><img class="nav-ic-img" src="nav-info.png" alt=""></button>
+    <button class="nav-btn" data-index="4" aria-label="تابعنا"><img class="nav-ic-img" src="nav-follow.png" alt=""></button>
+  </div>
+</div>
+
+<script>
+  /* =========================================================================
+     مهم جدًا قبل النشر:
+     1) APPS_SCRIPT_URL -> نفس رابط تطبيق المشرفين بعد إضافة كل الإجراءات الجديدة
+     2) LOGO_SRC -> الشعار الداخلي بالتطبيق (شاشة الدخول + الهيدر) — منفصل عن أيقونات
+        الشاشة الرئيسية (icon-512/192/180.png) المحددة بأعلى الملف
+     3) عدّل CONTACTS بالأسفل ببياناتك الفعلية (رابط واتساب/هاتف/بريد)
+     ========================================================================= */
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVV1SDLMhie0fMAf2qfu-1wB5AmSvRl3u-T7JDm2wUzaut6I8Lo3NTMpd9P9wE706blA/exec';
+const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hawaya-student/';
+  const LOGO_SRC = 'logo.png?v=20260905';
+  const CLOUDINARY_CLOUD_NAME = 'dhv0ypi5d';
+  const CLOUDINARY_UPLOAD_PRESET = 'hawaya_upload';
+  const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload';
+  const SESSION_KEY = 'hawaya_student_session';
+
+  // مفتاح تحكم واحد: true يعرض صفحة "انتهى البرنامج" بدل التطبيق بالكامل.
+  // false يرجّع التطبيق لعمله الطبيعي فورًا — بدون حذف أو المساس بأي كود آخر.
+  const PROGRAM_ENDED = false;
+
+  document.querySelectorAll('.app-logo').forEach((img) => { img.src = LOGO_SRC; });
+
+  const appRefreshLogo = document.getElementById('appRefreshLogo');
+  function refreshStudentApp() { location.reload(); }
+  if (appRefreshLogo) {
+    appRefreshLogo.addEventListener('click', refreshStudentApp);
+    appRefreshLogo.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); refreshStudentApp(); }
+    });
+  }
+
+  const appIntro = document.getElementById('appIntro');
+  const appIntroVideo = document.getElementById('appIntroVideo');
+  function closeAppIntro() {
+    if (!appIntro || appIntro.classList.contains('hidden')) return;
+    appIntro.classList.add('hidden');
+    try { appIntroVideo.pause(); } catch (_) {}
+  }
+  appIntroVideo.addEventListener('ended', closeAppIntro);
+  appIntroVideo.addEventListener('error', closeAppIntro);
+  setTimeout(closeAppIntro, 6500);
+  const playAttempt = appIntroVideo.play();
+  if (playAttempt && typeof playAttempt.catch === 'function') playAttempt.catch(closeAppIntro);
+
+  if (PROGRAM_ENDED) {
+    document.getElementById('programEndedView').classList.remove('hidden');
+  } else {
+
+  // تسجيل Service Worker — شرط أساسي ليعرض المتصفح زر التثبيت التلقائي (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+
+
+  // ====== نافذة تكبير صورة الإعلان ======
+  const imageLightbox = document.getElementById('imageLightbox');
+  function openImageLightbox(url) {
+    document.getElementById('lightboxImg').src = url;
+    imageLightbox.classList.remove('hidden');
+  }
+  imageLightbox.addEventListener('click', () => {
+    imageLightbox.classList.add('hidden');
+    document.getElementById('lightboxImg').src = '';
+  });
+
+  // ====== الإعلانات (صندوق الصفحة الرئيسية) ======
+  function renderAnnouncements(items) {
+    const wrap = document.getElementById('announcementsList');
+    if (!items || !items.length) {
+      wrap.innerHTML = '<p class="lb-empty">لا توجد إعلانات حاليًا</p>';
+      return;
+    }
+
+    const [featured, ...rest] = items;
+
+    let html = `
+      <div class="announcement-featured">
+        ${featured.imageUrl ? `<div class="announcement-featured-img" data-open-image="${featured.imageUrl}" style="background-image:url('${featured.imageUrl}')"></div>` : ''}
+        <div class="announcement-featured-body">
+          <div class="reward-name">${featured.text}</div>
+          <div class="reward-desc">${featured.date || ''}</div>
+        </div>
+      </div>
+    `;
+
+    html += rest.map(a => `
+      <div class="reward-item">
+        <div class="reward-emoji" ${a.imageUrl ? `data-open-image="${a.imageUrl}" style="background-image:url('${a.imageUrl}');background-size:cover;background-position:center;cursor:pointer;"` : ''}>${a.imageUrl ? '' : '📣'}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="reward-name">${a.text}</div>
+          <div class="reward-desc">${a.date || ''}</div>
+        </div>
+      </div>
+    `).join('');
+
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('[data-open-image]').forEach((el) => {
+      el.addEventListener('click', () => openImageLightbox(el.dataset.openImage));
+    });
+  }
+
+  async function loadAnnouncements() {
+    const wrap = document.getElementById('announcementsList');
+    wrap.innerHTML = '<p class="lb-empty">جاري التحميل...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getAnnouncements' });
+      renderAnnouncements(data.success ? data.announcements : []);
+    } catch (_) {
+      wrap.innerHTML = '<p class="lb-empty">تعذر تحميل الإعلانات</p>';
+    }
+  }
+
+  // ====== الجوائز — تُحمّل من الخادم، بآلية شراء فعلية ======
+  let currentStudentBalance = 0;
+
+  function renderRewards(rewards) {
+    const wrap = document.getElementById('rewardsList');
+    if (!rewards || !rewards.length) {
+      wrap.innerHTML = '<p class="lb-empty">لا توجد جوائز متاحة حاليًا</p>';
+      return;
+    }
+    wrap.innerHTML = rewards.map(r => {
+      let actionHtml;
+      if (!r.available) {
+        actionHtml = '<span class="reward-badge sold-out">نفذت الكمية</span>';
+      } else if (currentStudentBalance < r.price) {
+        actionHtml = '<span class="reward-badge insufficient">الرصيد غير كافي</span>';
+      } else {
+        actionHtml = `<button type="button" class="reward-buy-btn" data-buy-reward="${r.rowIndex}" data-buy-name="${r.name}">شراء</button>`;
+      }
+      return `
+        <div class="reward-item">
+          <div class="reward-emoji" style="${r.imageUrl ? `background-image:url('${r.imageUrl}');background-size:cover;background-position:center;` : ''}">${r.imageUrl ? '' : '🎁'}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="reward-name">${r.name}</div>
+            <div class="reward-desc">${r.price} دينار</div>
+          </div>
+          ${actionHtml}
+        </div>
+      `;
+    }).join('');
+
+    wrap.querySelectorAll('[data-buy-reward]').forEach((btn) => {
+      btn.addEventListener('click', () => showInlineConfirm(btn, () => handleBuyReward(Number(btn.dataset.buyReward), btn.dataset.buyName)));
+    });
+  }
+
+  async function loadRewards() {
+    const wrap = document.getElementById('rewardsList');
+    wrap.innerHTML = '<p class="lb-empty">جاري التحميل...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getRewards', group: getRewardGroupForStage(currentStudentStage) });
+      renderRewards(data.success ? data.rewards : []);
+    } catch (_) {
+      wrap.innerHTML = '<p class="lb-empty">تعذر تحميل الجوائز</p>';
+    }
+  }
+
+  // يظهر زر "تأكيد" جنب الزر المضغوط مباشرة بدل أي نافذة منبثقة. ضغط
+  // تأكيد ينفّذ onConfirm (لازم ترجع Promise وترمي خطأ لو فشلت العملية).
+  function showInlineConfirm(triggerBtn, onConfirm) {
+    if (triggerBtn.dataset.confirming === '1') return;
+    triggerBtn.dataset.confirming = '1';
+    triggerBtn.style.display = 'none';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.className = 'reward-confirm-btn';
+    confirmBtn.textContent = 'تأكيد';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'reward-cancel-btn';
+    cancelBtn.textContent = '✖';
+
+    function cleanup() {
+      confirmBtn.remove();
+      cancelBtn.remove();
+      triggerBtn.style.display = '';
+      delete triggerBtn.dataset.confirming;
+    }
+
+    confirmBtn.addEventListener('click', async () => {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '...';
+      try {
+        await onConfirm();
+        // العملية نجحت — القائمة نفسها بتتحدث وتستبدل هذا الصف بالكامل
+      } catch (err) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = (err && err.message) ? err.message : 'فشل، حاول مجددًا';
+        setTimeout(cleanup, 2200);
+        return;
+      }
+      cleanup();
+    });
+    cancelBtn.addEventListener('click', cleanup);
+
+    triggerBtn.insertAdjacentElement('afterend', confirmBtn);
+    confirmBtn.insertAdjacentElement('afterend', cancelBtn);
+  }
+
+  async function handleBuyReward(rowIndex, name) {
+    const session = getSession();
+    if (!session) throw new Error('سجّل دخولك من جديد');
+
+    const result = await callAppsScript({ action: 'requestPurchase', studentId: session.id, rewardRowIndex: rowIndex });
+    if (!result.success) throw new Error(result.error || 'تعذر إتمام الطلب');
+
+    currentStudentBalance = result.newBalance;
+    document.getElementById('rewardsBalance').textContent = currentStudentBalance;
+    document.getElementById('infoBalance').textContent = currentStudentBalance;
+
+    const msgEl = document.getElementById('rewardsMsg');
+    msgEl.textContent = '🌟 تم طلب "' + name + '"! توجه إلى البنك لاستلام الجائزة';
+    msgEl.style.display = 'block';
+
+    await loadRewards();
+    await loadMyPointsLog();
+  }
+
+  // ====== نصيحة اليوم — آخر نصيحة مضافة من المشرف ======
+  async function loadDailyTip() {
+    const el = document.getElementById('dailyTipText');
+    try {
+      const data = await callAppsScript({ action: 'getDailyTip' });
+      el.textContent = (data.success && data.tip) ? data.tip : 'حافظ على حضورك اليومي وتابع جديدنا 🌟';
+    } catch (_) {
+      el.textContent = 'حافظ على حضورك اليومي وتابع جديدنا 🌟';
+    }
+  }
+
+  function renderLeaderboard(list) {
+    const wrap = document.getElementById('leaderboardScroll');
+    if (!list || !list.length) {
+      wrap.innerHTML = '<p class="lb-empty">لا توجد بيانات كافية بعد</p>';
+      return;
+    }
+    wrap.innerHTML = list.map((s) => `
+      <div class="leader-card">
+        <div class="leader-rank ${s.rank === 1 ? 'top1' : ''}">#${s.rank}</div>
+        <div class="leader-photo" style="${s.imageUrl ? `background-image:url('${s.imageUrl}')` : ''}">${s.imageUrl ? '' : '🧒'}</div>
+        <div class="leader-name">${s.name || ''}</div>
+        <div class="leader-stage">${s.stage || ''}</div>
+      </div>
+    `).join('');
+  }
+
+  async function loadLeaderboard() {
+    const wrap = document.getElementById('leaderboardScroll');
+    wrap.innerHTML = '<p class="lb-empty">جاري التحميل...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getLeaderboard', stage: currentStudentStage });
+      if (!data.success) { wrap.innerHTML = '<p class="lb-empty">تعذر تحميل الترتيب</p>'; return; }
+      renderLeaderboard(data.leaderboard);
+    } catch (_) {
+      wrap.innerHTML = '<p class="lb-empty">تعذر تحميل الترتيب</p>';
+    }
+  }
+
+  // ====== نقاطي — الإنجازات (مقفلة إلا بعد حضور مسائي + من 3:30 عصرًا لين 3 عصرًا اليوم التالي) ======
+  function renderDailyAchievements(daily) {
+    const wrap = document.getElementById('dailyAchievementsList');
+    wrap.innerHTML = daily.map((a) => {
+      const doneCount = a.doneCount || 0;
+      const maxChecks = Math.max(1, Math.min(20, Number(a.maxPerDay) || 1));
+      const checks = Array.from({ length: maxChecks }, (_, i) =>
+        `<input type="checkbox" class="achievement-checkbox" data-daily-key="${a.key}" ${i < doneCount ? 'checked disabled' : ''} aria-label="المرة ${i + 1}">`
+      ).join('');
+      return `<div class="achievement-row ${doneCount >= maxChecks ? 'done' : ''}">
+        <span class="achievement-label">${a.label}<small style="display:block;color:var(--text-muted);margin-top:3px;">تم ${doneCount} من ${maxChecks} اليوم</small></span>
+        <span class="achievement-checks">${checks}</span>
+        <span class="achievement-points">+${a.points}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderWeeklyAchievements(weekly) {
+    const wrap = document.getElementById('weeklyAchievementsList');
+    wrap.innerHTML = weekly.map((a) => {
+      if (a.done) {
+        return `<div class="achievement-row done"><span class="achievement-label">✅ ${a.label} — مأخوذ هذا الأسبوع</span></div>`;
+      }
+      return `
+      <label class="achievement-row">
+        <input type="checkbox" class="achievement-checkbox" data-weekly-key="${a.key}">
+        <span class="achievement-label">${a.label}</span>
+        <span class="achievement-points">+${a.points}</span>
+      </label>`;
+    }).join('');
+  }
+
+  const YOUNG_GRADES = ['أول ابتدائي', 'ثاني ابتدائي', 'ثالث ابتدائي'];
+  let currentStudentStage = '';
+
+  // مجموعة جوائز الطالب حسب مرحلته (نفس تقسيم الخادم)
+  function getRewardGroupForStage(stage) {
+    if (['أول ابتدائي', 'ثاني ابتدائي', 'ثالث ابتدائي', 'رابع ابتدائي'].indexOf(stage) !== -1) return 'ابتدائي_صغار';
+    if (['خامس ابتدائي', 'سادس ابتدائي'].indexOf(stage) !== -1) return 'ابتدائي_كبار';
+    if (stage.indexOf('متوسط') !== -1) return 'متوسط';
+    return 'ثانوي';
+  }
+
+  async function loadAchievementsLegacy() {
+    const session = getSession();
+    if (!session) return;
+
+    // الصفوف الأولى-الرابعة: نقاطهم يضيفها المعلم مباشرة من شاشته، فلا تحتاج
+    // قفل بالوقت ولا أي تفاعل هنا — فقط رسالة توضيحية + السجل بالأسفل كالعادة
+    if (YOUNG_GRADES.indexOf(currentStudentStage) !== -1) {
+      document.getElementById('achievementsLockedCard').style.display = 'none';
+      document.getElementById('achievementsContent').style.display = 'none';
+      document.getElementById('achievementsTeacherManagedCard').style.display = 'block';
+      return;
+    }
+
+    try {
+      const data = await callAppsScript({ action: 'getAchievementsStatus', id: session.id });
+      if (!data.success) return;
+
+      if (!data.allowed) {
+        document.getElementById('achievementsLockedCard').style.display = 'block';
+        document.getElementById('achievementsContent').style.display = 'none';
+        document.getElementById('achievementsLockedReason').textContent = data.reason;
+        return;
+      }
+
+      document.getElementById('achievementsLockedCard').style.display = 'none';
+      document.getElementById('achievementsContent').style.display = 'block';
+      renderDailyAchievements(data.daily);
+      renderWeeklyAchievements(data.weekly);
+    } catch (_) {
+      // تجاهل بصمت — السجل والصفحات الثانية تبقى تعمل
+    }
+  }
+
+  async function loadMyGroup() {
+    const session = getSession();
+    if (!session) return;
+    const wrap = document.getElementById('myGroupContent');
+    try {
+      const data = await callAppsScript({ action: 'getStudentGroupData', id: session.id });
+      if (!data.success || !data.hasGroup) {
+        wrap.innerHTML = '<p class="lb-empty">لم تتم إضافتك إلى مجموعة حتى الآن</p>';
+        return;
+      }
+      const group = data.group;
+      wrap.innerHTML = `<div style="font-weight:800;color:var(--violet);margin-bottom:8px;">${group.name}</div>` +
+        group.members.map((member, index) => `<div class="group-member-row ${String(member.id) === String(session.id) ? 'me' : ''}">
+          <span><b>${index + 1}. ${member.name}</b>${String(member.id) === String(session.id) ? ' (أنت)' : ''}</span>
+          <span class="achievement-points">${member.balance} نقطة</span>
+        </div>`).join('');
+    } catch (_) {
+      wrap.innerHTML = '<p class="lb-empty">تعذر تحميل المجموعة</p>';
+    }
+  }
+
+  document.getElementById('confirmAchievementsBtn').addEventListener('click', async () => {
+    const session = getSession();
+    if (!session) return;
+
+    const dailyCounts = {};
+    Array.from(document.querySelectorAll('.achievement-checkbox[data-daily-key]:checked:not(:disabled)')).forEach((el) => {
+      dailyCounts[el.dataset.dailyKey] = (dailyCounts[el.dataset.dailyKey] || 0) + 1;
+    });
+    const weeklyKeys = Array.from(document.querySelectorAll('.achievement-checkbox[data-weekly-key]:checked')).map((el) => el.dataset.weeklyKey);
+    const msgEl = document.getElementById('achievementsMsg');
+
+    if (!Object.keys(dailyCounts).length && !weeklyKeys.length) {
+      msgEl.style.color = 'var(--error)';
+      msgEl.textContent = 'اختر إنجاز واحد على الأقل';
+      return;
+    }
+
+    const btn = document.getElementById('confirmAchievementsBtn');
+    btn.disabled = true; btn.textContent = 'جاري التأكيد...'; msgEl.textContent = '';
+
+    try {
+      const result = await callAppsScript({ action: 'submitAchievements', id: session.id, password: session.pw, dailyCounts: dailyCounts, weeklyKeys: weeklyKeys });
+      if (result.success) {
+        msgEl.style.color = 'var(--success)';
+        msgEl.textContent = result.pointsAdded > 0
+          ? ('✅ تم تسجيل إنجازاتك! حصلت على ' + result.pointsAdded + ' دينار')
+          : 'تم — لا توجد إنجازات جديدة لإضافتها';
+        await loadAchievements();
+        await loadMyPointsLog();
+        const fresh = await studentLogin(session.id, session.pw);
+        if (fresh.success) populateStudentData(fresh);
+      } else {
+        msgEl.style.color = 'var(--error)';
+        msgEl.textContent = result.error || 'تعذر التسجيل';
+      }
+    } catch (_) {
+      msgEl.style.color = 'var(--error)';
+      msgEl.textContent = 'حدث خطأ في الاتصال';
+    } finally {
+      btn.disabled = false; btn.textContent = '✅ تأكيد';
+    }
+  });
+
+  // ====== سجل نقاطي ======
+  async function loadMyPointsLogLegacy() {
+    const session = getSession();
+    if (!session) return;
+    const wrap = document.getElementById('myPointsLogList');
+    wrap.innerHTML = '<p class="lb-empty">جاري التحميل...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getPointsLog', id: session.id });
+      const log = data.success ? data.log : [];
+      if (!log.length) { wrap.innerHTML = '<p class="lb-empty">لا توجد عمليات مسجلة بعد</p>'; return; }
+      wrap.innerHTML = log.map((entry) => `
+        <div class="log-row">
+          <div>
+            <div class="log-reason">${entry.reason}</div>
+            <div class="log-date">${entry.date}</div>
+          </div>
+          <span class="log-amount" style="color:${entry.amount > 0 ? 'var(--success)' : 'var(--error)'}">${entry.amount > 0 ? '+' : ''}${entry.amount}</span>
+        </div>
+      `).join('');
+    } catch (_) {
+      wrap.innerHTML = '<p class="lb-empty">تعذر تحميل السجل</p>';
+    }
+  }
+
+  document.getElementById('refreshLogBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('refreshLogBtn');
+    btn.disabled = true; btn.textContent = '...جاري التحديث';
+    await loadMyPointsLog();
+    btn.disabled = false; btn.textContent = '🔄 تحديث السجل';
+  });
+
+  // ====== استدعاء الخادم ======
+  async function callAppsScript(payload) {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  // ===== تغيير الصورة الشخصية =====
+  function compressImage(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > height && width > maxDim) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+          else if (height >= width && height > maxDim) { width = Math.round(width * (maxDim / height)); height = maxDim; }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
+        };
+        img.onerror = reject;
+        img.src = ev.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadToCloudinary(base64Data, folder, mimeType) {
+    const dataUrl = 'data:' + mimeType + ';base64,' + base64Data;
+    const fd = new FormData();
+    fd.append('file', dataUrl);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    fd.append('folder', folder);
+
+    const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: fd });
+    const json = await res.json();
+    if (!res.ok || !json.secure_url) {
+      throw new Error(json.error ? json.error.message : 'فشل رفع الصورة');
+    }
+    return json.secure_url;
+  }
+
+  document.getElementById('changePhotoBtn').addEventListener('click', () => {
+    document.getElementById('changePhotoInput').click();
+  });
+
+  document.getElementById('changePhotoInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const session = getSession();
+    if (!session) return;
+
+    const msgEl = document.getElementById('changePhotoMsg');
+    const btn = document.getElementById('changePhotoBtn');
+    msgEl.style.color = 'var(--error)';
+    msgEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'جاري الرفع...';
+
+    try {
+      const compressed = await compressImage(file, 800, 0.75);
+      const imageUrl = await uploadToCloudinary(compressed, 'student-photos', 'image/jpeg');
+
+      const result = await callAppsScript({ action: 'updateStudentPhoto', id: session.id, password: session.pw, imageUrl: imageUrl });
+      if (!result.success) { msgEl.textContent = result.error || 'تعذر تحديث الصورة'; return; }
+
+      const infoAvatar = document.getElementById('infoAvatar');
+      infoAvatar.style.backgroundImage = "url('" + imageUrl + "')";
+      infoAvatar.textContent = '';
+
+      msgEl.style.color = 'var(--success)';
+      msgEl.textContent = '✅ تم تحديث صورتك';
+      setTimeout(() => { msgEl.textContent = ''; }, 2500);
+    } catch (err) {
+      msgEl.textContent = 'تعذر رفع الصورة، حاول مرة أخرى';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '📷 تغيير الصورة';
+      e.target.value = ''; // يسمح باختيار نفس الملف مرة ثانية لو احتاج
+    }
+  });
+
+  async function studentLogin(id, pw) {
+    return callAppsScript({ action: 'studentLogin', id: id, password: pw });
+  }
+
+  // ====== الجلسة ======
+  function saveSession(id, pw) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ id: id, pw: pw }));
+  }
+  function getSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) { return null; }
+  }
+  function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+  // ====== عرض الواجهات ======
+  const loadingView = document.getElementById('loadingView');
+  const loginView = document.getElementById('loginView');
+  const appView = document.getElementById('appView');
+
+  function showLoading() {
+    loadingView.classList.remove('hidden');
+    loginView.classList.add('hidden');
+    appView.classList.add('hidden');
+  }
+  function showLogin(errorText) {
+    loadingView.classList.add('hidden');
+    appView.classList.add('hidden');
+    loginView.classList.remove('hidden');
+    document.getElementById('loginError').textContent = errorText || '';
+  }
+  function showApp(data) {
+    loadingView.classList.add('hidden');
+    loginView.classList.add('hidden');
+    appView.classList.remove('hidden');
+    populateStudentData(data);
+    resetPagesToHome();
+    loadAnnouncements();
+    // العشرة الأوائل مخفية حاليًا (ترقبوا الحفل) — تعطيل تحميلها مؤقتًا
+    // loadLeaderboard();
+    loadDailyTip();
+    loadAchievements();
+    loadStudentAttendanceStatus();
+    loadMyPointsLog();
+  }
+
+  function populateStudentData(data) {
+    document.getElementById('headerWelcome').textContent = 'أهلًا بك، ' + data.name + ' ✨';
+    currentStudentStage = data.stage;
+    currentStudentBalance = data.balance;
+    document.getElementById('infoBalance').textContent = data.balance;
+    document.getElementById('rewardsBalance').textContent = data.balance;
+    document.getElementById('infoName').textContent = data.name;
+    document.getElementById('infoStage').textContent = data.stage;
+    document.getElementById('infoId').textContent = data.id;
+    // عنصر عرض المركز بأعلى العشرة الأوائل مخفي حاليًا (ترقبوا الحفل)
+    // document.getElementById('lbYourRank').textContent = data.rank ? ('· مركزك #' + data.rank) : '';
+
+    const infoAvatar = document.getElementById('infoAvatar');
+    if (data.imageUrl) {
+      infoAvatar.style.backgroundImage = "url('" + data.imageUrl + "')";
+      infoAvatar.textContent = '';
+    } else {
+      infoAvatar.style.backgroundImage = '';
+      infoAvatar.textContent = '🧒';
+    }
+    document.getElementById('infoRank').textContent = data.rank ? ('#' + data.rank) : '—';
+
+  }
+
+  async function loadStudentAttendanceStatus() {
+    const session = getSession();
+    if (!session) return;
+    const status = document.getElementById('studentAttendanceStatus');
+    const actions = document.getElementById('studentAttendanceActions');
+    const msg = document.getElementById('studentAttendanceMsg');
+    if (!status || !actions) return;
+    actions.style.display = 'none';
+    status.textContent = 'جاري التحقق من وقت الحضور...';
+    if (msg) msg.textContent = '';
+    try {
+      const data = await callAppsScript({ action: 'getStudentAttendanceStatus', id: session.id, password: session.pw });
+      if (!data.success) {
+        status.textContent = data.error || 'تعذر التحقق من الحضور';
+        return;
+      }
+      if (data.alreadyMarked) {
+        status.textContent = 'تم تسجيل حضورك اليوم بالفعل ✅';
+        return;
+      }
+      if (!data.allowed) {
+        status.textContent = data.reason || 'تسجيل الحضور مقفل الآن';
+        return;
+      }
+      status.textContent = 'اختر نوع حضورك — لا يمكن تغيير الاختيار بعد التسجيل';
+      actions.style.display = 'grid';
+    } catch (_) {
+      status.textContent = 'تعذر الاتصال، حاول تحديث التطبيق';
+    }
+  }
+
+  document.getElementById('studentAttendanceActions').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-student-attendance]');
+    if (!btn) return;
+    const tier = btn.dataset.studentAttendance;
+    const label = tier === 'early' ? 'الحضور المبكر' : 'الحضور العادي';
+    if (!confirm('تأكيد تسجيل ' + label + '؟ لا يمكن تغيير الاختيار بعد التسجيل.')) return;
+    const session = getSession();
+    if (!session) return;
+    const buttons = document.querySelectorAll('[data-student-attendance]');
+    const msg = document.getElementById('studentAttendanceMsg');
+    buttons.forEach((x) => { x.disabled = true; });
+    msg.textContent = 'جاري تسجيل الحضور...';
+    try {
+      const result = await callAppsScript({ action: 'studentMarkAttendance', id: session.id, password: session.pw, tier: tier });
+      msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
+      msg.textContent = result.success ? ('✅ تم تسجيل ' + label + ' وإضافة ' + result.pointsAdded + ' نقطة') : (result.error || 'تعذر تسجيل الحضور');
+      if (result.success) {
+        document.getElementById('studentAttendanceActions').style.display = 'none';
+        document.getElementById('studentAttendanceStatus').textContent = 'تم تسجيل حضورك اليوم بالفعل ✅';
+        const refreshed = await studentLogin(session.id, session.pw);
+        if (refreshed.success) populateStudentData(refreshed);
+      }
+    } catch (_) {
+      msg.style.color = 'var(--error)';
+      msg.textContent = 'حدث خطأ في الاتصال';
+    } finally {
+      buttons.forEach((x) => { x.disabled = false; });
+    }
+  });
+
+  // ====== التنقل بين الصفحات: الانزلاق يكون بنفس جهة الأيقونة المضغوطة ======
+  const panels = Array.from(document.querySelectorAll('.page-panel'));
+  const navButtons = document.querySelectorAll('.nav-btn');
+  let currentIndex = 0;
+
+  // ترتيب الأيقونات بالقائمة السفلية من اليمين لليسار (نفس ترتيب DOM بصفحة RTL):
+  // 0=الرئيسية (أقصى اليمين) ... 4=تابعنا (أقصى اليسار)
+  // فهرس أكبر = الأيقونة لجهة اليسار، فهرس أصغر = الأيقونة لجهة اليمين
+  function goToPage(newIndex) {
+    if (newIndex === currentIndex || !panels[newIndex]) return;
+
+    const oldPanel = panels[currentIndex];
+    const newPanel = panels[newIndex];
+    const targetIsToTheLeft = newIndex > currentIndex; // الأيقونة المضغوطة تقع يسار الحالية
+
+    const enterFrom = targetIsToTheLeft ? '-100%' : '100%'; // تدخل من نفس جهة الأيقونة
+    const exitTo = targetIsToTheLeft ? '100%' : '-100%';    // القديمة تخرج للجهة المعاكسة
+
+    newPanel.style.transition = 'none';
+    newPanel.style.transform = 'translateX(' + enterFrom + ')';
+    newPanel.style.display = 'block';
+    newPanel.getBoundingClientRect(); // فرض إعادة رسم قبل تفعيل الانتقال
+    newPanel.style.transition = '';
+
+    requestAnimationFrame(() => {
+      oldPanel.style.transform = 'translateX(' + exitTo + ')';
+      newPanel.style.transform = 'translateX(0)';
+    });
+
+    const onEnd = (ev) => {
+      if (ev.propertyName !== 'transform') return;
+      oldPanel.style.display = 'none';
+      newPanel.removeEventListener('transitionend', onEnd);
+    };
+    newPanel.addEventListener('transitionend', onEnd);
+
+    currentIndex = newIndex;
+    navButtons.forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.index) === newIndex));
+  }
+
+  // يُستدعى عند كل دخول جديد (تسجيل دخول/تحديث جلسة) لإعادة كل شي لحالة الصفحة الرئيسية بدون أنيميشن
+  function resetPagesToHome() {
+    panels.forEach((p, i) => {
+      p.style.transition = 'none';
+      p.style.display = i === 0 ? 'block' : 'none';
+      p.style.transform = i === 0 ? 'translateX(0)' : 'translateX(100%)';
+    });
+    panels[0].getBoundingClientRect();
+    panels.forEach((p) => { p.style.transition = ''; });
+    currentIndex = 0;
+    navButtons.forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.index) === 0));
+  }
+
+  navButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.index);
+      goToPage(idx);
+      // تبويب "نقاطي" (index 1) يحتاج فحص الحالة من جديد كل مرة يُفتح، عشان
+      // ينعكس فورًا أي حضور سُجّل بعد ما الطالب فتح التطبيق (باركود أو يدوي)
+      if (idx === 1) {
+        loadAchievements();
+        loadStudentAttendanceStatus();
+        loadMyGroup();
+        loadMyPointsLog();
+      }
+    });
+  });
+
+  // ====== تحديث الرصيد والمركز يدويًا ======
+  document.getElementById('refreshBalanceBtn').addEventListener('click', async () => {
+    const session = getSession();
+    if (!session) return;
+    const btn = document.getElementById('refreshBalanceBtn');
+    btn.disabled = true;
+    btn.textContent = '...جاري التحديث';
+    try {
+      const data = await studentLogin(session.id, session.pw);
+      if (data.success) {
+        populateStudentData(data);
+      }
+    } catch (_) {
+      // تجاهل بصمت — يحافظ على آخر رصيد معروض
+    }
+    btn.disabled = false;
+    btn.textContent = '🔄 تحديث الرصيد';
+  });
+
+  // ====== تسجيل الخروج ======
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    clearSession();
+    location.reload();
+  });
+
+  // ====== زر تثبيت التطبيق (PWA) — ظاهر دائمًا، يتعامل مع كل الحالات ======
+  const installBtn = document.getElementById('installBtn');
+  const iosInstallOverlay = document.getElementById('iosInstallOverlay');
+  const genericInstallOverlay = document.getElementById('genericInstallOverlay');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  let deferredInstallPrompt = null;
+
+  // الحالة الوحيدة التي نخفي فيها الزر: التطبيق مثبّت فعليًا ومفتوح كتطبيق مستقل
+  if (isStandalone) installBtn.classList.add('hidden');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      installBtn.classList.add('hidden');
+    } else if (isIOS) {
+      iosInstallOverlay.classList.remove('hidden');
+    } else {
+      genericInstallOverlay.classList.remove('hidden');
+    }
+  });
+
+  document.getElementById('closeIosHint').addEventListener('click', () => {
+    iosInstallOverlay.classList.add('hidden');
+  });
+  document.getElementById('closeGenericHint').addEventListener('click', () => {
+    genericInstallOverlay.classList.add('hidden');
+  });
+
+  // ====== نموذج تسجيل الدخول اليدوي ======
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('loginId').value.trim();
+    const pw = document.getElementById('loginPw').value.trim();
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    loginError.textContent = '';
+
+    if (!id || !pw) { loginError.textContent = 'الرجاء إدخال رقم الطالب والرقم السري'; return; }
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'جاري الدخول...';
+    try {
+      const data = await studentLogin(id, pw);
+      if (!data.success) {
+        loginError.textContent = data.error || 'بيانات الدخول غير صحيحة';
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'دخول';
+        return;
+      }
+      saveSession(id, pw);
+      showApp(data);
+    } catch (err) {
+      loginError.textContent = 'حدث خطأ في الاتصال، حاول مرة أخرى';
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'دخول';
+    }
+  });
+
+  // ====== التحقق التلقائي عند فتح التطبيق ======
+  async function init() {
+    showLoading();
+
+    // 1) لو فُتح التطبيق من رابط الباركود (id & pw بالرابط) -> دخول تلقائي
+    const params = new URLSearchParams(location.search);
+    const urlId = params.get('id');
+    const urlPw = params.get('pw');
+
+    if (urlId && urlPw) {
+      try {
+        const data = await studentLogin(urlId, urlPw);
+        // تنظيف الرابط من البيانات الحساسة بعد المحاولة (نجحت أو فشلت)
+        history.replaceState({}, document.title, location.pathname);
+        if (data.success) {
+          saveSession(urlId, urlPw);
+          showApp(data);
+          return;
+        }
+        showLogin(data.error || 'تعذر تسجيل الدخول من الباركود');
+        return;
+      } catch (_) {
+        history.replaceState({}, document.title, location.pathname);
+        showLogin('حدث خطأ في الاتصال، حاول تسجيل الدخول يدويًا');
+        return;
+      }
+    }
+
+    // 2) لو فيه جلسة محفوظة بالمتصفح -> تحقق منها وحدّث الرصيد والمركز
+    const session = getSession();
+    if (session && session.id && session.pw) {
+      try {
+        const data = await studentLogin(session.id, session.pw);
+        if (data.success) {
+          showApp(data);
+          return;
+        }
+        clearSession();
+        showLogin();
+        return;
+      } catch (_) {
+        showLogin('تعذر الاتصال بالخادم، تحقق من الإنترنت وحاول مرة أخرى');
+        return;
+      }
+    }
+
+    // 3) ما فيه جلسة ولا رابط باركود -> شاشة تسجيل دخول عادية
+    showLogin();
+  }
+
+  // ====== النسخة الجديدة لإضافة النقاط حسب اليوم ======
+  let selectedPointsDayKey = '';
+
+  function renderDayPointItems(items) {
+    const wrap = document.getElementById('dailyAchievementsList');
+    wrap.innerHTML = (items || []).map((a) => {
+      const maxChecks = Math.max(1, Math.min(20, Number(a.maxChecks) || 1));
+      const count = Math.max(0, Number(a.count) || 0);
+      const circles = Array.from({ length: maxChecks }, (_, i) =>
+        `<input type="checkbox" class="achievement-checkbox" data-day-item="${a.key}" ${i < count ? 'checked disabled' : ''} aria-label="المرة ${i + 1}${i < count ? ' — محفوظة' : ''}">`
+      ).join('');
+      return `<div class="achievement-row">
+        <span class="achievement-label">${a.label}<small style="display:block;color:var(--text-muted);margin-top:3px;">${a.points} نقطة لكل دائرة · الرصيد أسبوعي</small></span>
+        <span class="achievement-checks">${circles}</span>
+      </div>`;
+    }).join('') || '<p class="lb-empty">لا توجد بنود مفعّلة حاليًا</p>';
+  }
+
+  function renderGroupDayActivity(items) {
+    const wrap = document.getElementById('groupDayActivity');
+    if (!items || !items.length) { wrap.innerHTML = '<p class="lb-empty">لا توجد نقاط مسجلة لأعضاء المجموعة في هذا اليوم</p>'; return; }
+    wrap.innerHTML = items.map((student, index) => `<div class="group-member-row">
+      <div style="flex:1;"><b>${index + 1}. ${student.name}</b><div class="activity-details">${student.items.map((x) => `${x.count} ${x.label}`).join(' · ')}</div></div>
+    </div>`).join('');
+  }
+
+  async function loadAchievements(dayKey) {
+    const session = getSession();
+    if (!session) return;
+    if (YOUNG_GRADES.indexOf(currentStudentStage) !== -1) {
+      document.getElementById('achievementsLockedCard').style.display = 'none';
+      document.getElementById('achievementsContent').style.display = 'none';
+      document.getElementById('achievementsTeacherManagedCard').style.display = 'block';
+      return;
+    }
+    document.getElementById('achievementsTeacherManagedCard').style.display = 'none';
+    try {
+      const data = await callAppsScript({ action: 'getDayPointsContext', id: session.id, password: session.pw, dayKey: dayKey || selectedPointsDayKey });
+      if (!data.success) {
+        document.getElementById('achievementsLockedCard').style.display = 'block';
+        document.getElementById('achievementsContent').style.display = 'none';
+        document.getElementById('achievementsLockedReason').textContent = data.error || 'الصفحة غير متاحة الآن';
+        return;
+      }
+      selectedPointsDayKey = data.selectedDay.key;
+      document.getElementById('achievementsLockedCard').style.display = 'none';
+      document.getElementById('achievementsContent').style.display = 'block';
+      document.getElementById('pointsWeekLabel').textContent = data.weekLabel;
+      document.getElementById('selectedDayLabel').textContent = data.selectedDay.label + ' — ' + data.selectedDay.date;
+      document.getElementById('pointsDayTabs').innerHTML = data.days.map((d) => `<button type="button" class="day-tab ${d.key === selectedPointsDayKey ? 'active' : ''}" data-points-day="${d.key}" ${d.enabled ? '' : 'disabled'}>${d.label}</button>`).join('');
+      renderDayPointItems(data.items);
+      renderGroupDayActivity(data.groupActivity);
+      document.getElementById('pointsDayTabs').style.display = 'none';
+      const saveBtn = document.getElementById('confirmAchievementsBtn');
+      saveBtn.disabled = false;
+      saveBtn.textContent = '✅ حفظ النقاط';
+      const statusMsg = document.getElementById('achievementsMsg');
+      statusMsg.textContent = '';
+    } catch (_) {
+      document.getElementById('achievementsLockedCard').style.display = 'block';
+      document.getElementById('achievementsContent').style.display = 'none';
+      document.getElementById('achievementsLockedReason').textContent = 'تعذر الاتصال، حاول مرة أخرى';
+    }
+  }
+
+  document.getElementById('pointsDayTabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-points-day]');
+    if (btn && !btn.disabled) loadAchievements(btn.dataset.pointsDay);
+  });
+
+  // الالتقاط يمنع معالج التأكيد القديم ويستخدم حفظ اليوم الجديد فقط.
+  document.getElementById('confirmAchievementsBtn').addEventListener('click', async (e) => {
+    e.stopImmediatePropagation();
+    const session = getSession();
+    if (!session) return;
+    const counts = {};
+    document.querySelectorAll('[data-day-item]').forEach((box) => {
+      if (!(box.dataset.dayItem in counts)) counts[box.dataset.dayItem] = 0;
+      if (box.checked) counts[box.dataset.dayItem]++;
+    });
+    const btn = e.currentTarget;
+    const msg = document.getElementById('achievementsMsg');
+    btn.disabled = true; btn.textContent = 'جاري الحفظ...'; msg.textContent = '';
+    try {
+      const result = await callAppsScript({ action: 'saveDayPoints', id: session.id, password: session.pw, dayKey: selectedPointsDayKey, counts: counts });
+      msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
+      msg.textContent = result.success ? (result.modifiedOtherDay ? '✅ تم الحفظ، وسُجل أن التعديل تم في يوم آخر' : '✅ تم حفظ النقاط') : (result.error || 'تعذر الحفظ');
+      if (result.success) { await loadAchievements(); await loadMyPointsLog(); }
+    } catch (_) { msg.style.color = 'var(--error)'; msg.textContent = 'حدث خطأ في الاتصال'; }
+    finally { btn.disabled = false; btn.textContent = '✅ حفظ النقاط'; }
+  }, true);
+
+  async function loadMyPointsLog() {
+    const session = getSession();
+    if (!session) return;
+    const wrap = document.getElementById('myPointsLogList');
+    wrap.innerHTML = '<p class="lb-empty">جاري التحميل...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getStudentDetailedPointsLog', id: session.id });
+      const log = data.success ? data.log : [];
+      if (!log.length) { wrap.innerHTML = '<p class="lb-empty">لا توجد نقاط مسجلة بعد</p>'; return; }
+      wrap.innerHTML = log.map((entry) => `<div class="log-row">
+        <div><div class="log-reason">${entry.count} ${entry.label}</div><div class="log-date">${entry.date}${entry.modifiedOtherDay ? ` · عُدلت في يوم آخر (${entry.editDate})` : ''}</div></div>
+        <span class="log-amount">${entry.total}</span>
+      </div>`).join('');
+    } catch (_) { wrap.innerHTML = '<p class="lb-empty">تعذر تحميل السجل</p>'; }
+  }
+
+  function setupStudentInfoLayout() {
+    const page = document.getElementById('studentInfoPage');
+    const membership = document.getElementById('membershipCardSection');
+    const logCard = document.getElementById('legacyStudentLogCard');
+    if (page && membership && logCard) {
+      page.insertBefore(membership, page.firstChild);
+      membership.insertAdjacentElement('afterend', logCard);
+      logCard.classList.remove('hidden');
+    }
+  }
+
+  setupStudentInfoLayout();
+  init();
+  } // نهاية else (PROGRAM_ENDED)
+</script>
+</body>
+</html>
