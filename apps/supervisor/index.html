@@ -1,0 +1,2809 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>مشرف هواية</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#352868">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="مشرف هواية">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;700;800&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --blue:#2F6FBF;
+    --indigo:#352868;
+    --violet:#7C5BA6;
+    --pink:#F178A8;
+    --sun:#FFC83C;
+    --bg:#F6F4FB;
+    --card:#FFFFFF;
+    --text:#2B2640;
+    --text-muted:#79738F;
+    --error:#D1485B;
+    --success:#2E9E6C;
+    --radius:22px;
+    --nav-h:74px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 88% -6%, rgba(255,200,60,.22), transparent 38%),
+      radial-gradient(circle at -10% 102%, rgba(124,91,166,.16), transparent 42%),
+      var(--bg);
+    font-family:'Almarai', sans-serif;
+    color:var(--text);
+    overflow-x:hidden;
+  }
+  .hidden{display:none !important;}
+
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:26px 22px 30px;
+    box-shadow:0 14px 38px -16px rgba(53,40,104,.18);
+    position:relative;
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+  .welcome-pill{
+    display:block;width:fit-content;margin:0 auto 16px;
+    padding:7px 18px;border-radius:999px;
+    background:linear-gradient(95deg, var(--pink), var(--violet));
+    color:#fff;font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:.82rem;
+  }
+  .btn-secondary{background:#F3F0FA;color:var(--indigo);box-shadow:none;margin-top:10px;}
+
+  /* زر تثبيت التطبيق */
+  .install-btn{
+    display:block;width:fit-content;margin:0 auto 14px;
+    padding:9px 18px;border-radius:999px;border:none;
+    background:#F3F0FA;color:var(--indigo);
+    font-family:'Almarai', sans-serif;font-weight:700;font-size:.82rem;
+    box-shadow:none;cursor:pointer;
+  }
+  .install-btn:active{transform:translateY(1px) scale(.99);}
+
+  /* نافذة شرح التثبيت على آيفون */
+  .ios-install-overlay{
+    position:fixed;inset:0;background:rgba(43,38,64,.55);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;z-index:60;
+  }
+  .ios-install-card{
+    background:#fff;border-radius:20px;padding:24px 20px;max-width:340px;width:100%;
+    box-shadow:0 18px 50px -12px rgba(53,40,104,.35);
+  }
+  .ios-install-card h3{
+    font-family:'Baloo Bhaijaan 2', sans-serif;font-size:1.1rem;color:var(--indigo);
+    text-align:center;margin:0 0 16px;
+  }
+  .ios-install-card p{
+    font-size:.92rem;color:var(--text);margin:0 0 12px;line-height:1.6;
+    display:flex;align-items:flex-start;gap:8px;
+  }
+  .ios-step-num{
+    flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;
+    background:var(--violet);color:#fff;font-size:.75rem;font-weight:700;
+  }
+  .ios-share-icon{font-size:1rem;}
+  .ios-install-card button{margin-top:8px;}
+  h1{font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.5rem;color:var(--indigo);text-align:center;margin:0 0 6px;}
+  .subtitle{text-align:center;color:var(--text-muted);font-size:.92rem;margin:0 0 24px;}
+  label{display:block;font-size:.88rem;font-weight:700;color:var(--indigo);margin-bottom:16px;}
+  input, select{
+    width:100%;margin-top:8px;padding:13px 14px;border-radius:14px;
+    border:2px solid #E7E2F2;background:#FBFAFD;
+    font-family:'Almarai', sans-serif;font-size:1rem;color:var(--text);
+    outline:none;transition:border-color .15s ease;appearance:none;
+  }
+  input:focus, select:focus{border-color:var(--blue);}
+  select{direction:rtl;}
+  button{
+    width:100%;padding:15px;border:none;border-radius:999px;
+    font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.05rem;
+    color:#fff;cursor:pointer;
+    background:linear-gradient(95deg, var(--blue), var(--violet));
+    box-shadow:0 10px 24px -8px rgba(47,111,191,.55);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  button:active{transform:translateY(1px) scale(.99);}
+  button:disabled{opacity:.65;cursor:not-allowed;}
+  .error{color:var(--error);font-size:.85rem;text-align:center;min-height:1.2em;margin:14px 0 0;font-weight:700;}
+  .logo{display:block;width:100%;max-width:200px;margin:0 auto 18px;}
+  .image-preview{display:block;width:96px;height:96px;object-fit:cover;border-radius:16px;margin:10px auto 0;border:2px solid #E7E2F2;}
+  .photo-source-buttons{display:flex;gap:8px;margin-top:8px;}
+  .photo-source-btn{
+    flex:1;width:auto;padding:11px 8px;border-radius:14px;font-size:.85rem;
+    font-family:'Almarai', sans-serif;font-weight:700;
+    background:#F3F0FA;color:var(--indigo);box-shadow:none;
+  }
+  .photo-source-btn.active{background:linear-gradient(95deg, var(--blue), var(--violet));color:#fff;}
+  .sun-icon{font-size:2.1rem;text-align:center;margin-bottom:4px;animation:pop .5s ease;}
+  @keyframes pop{0%{transform:scale(0) rotate(-15deg);opacity:0;}65%{transform:scale(1.15) rotate(6deg);opacity:1;}100%{transform:scale(1) rotate(0);}}
+  #successName{font-weight:700;color:var(--text);}
+
+  /* بطاقة الطالب بشكل بطاقة هوية/بنكية */
+  .id-card{
+    position:relative;margin:18px 0 4px;border-radius:16px;padding:14px;
+    background:linear-gradient(135deg, #1A1430, var(--indigo) 40%, var(--violet) 75%, var(--pink) 110%);
+    color:#fff;overflow:hidden;animation:rise .45s ease;
+    display:flex;align-items:flex-start;gap:12px;
+  }
+  @keyframes rise{0%{transform:translateY(14px);opacity:0;}100%{transform:translateY(0);opacity:1;}}
+  .id-card-info{flex:1;min-width:0;text-align:right;position:relative;z-index:1;}
+  .id-card-logo-wrap{display:inline-block;margin:0 0 3px 0;line-height:0;border-radius:10px;overflow:hidden;}
+  .id-card-logo{height:54px;width:auto;display:inline-block;}
+  .id-card-label{font-size:.62rem;color:rgba(255,255,255,.62);font-weight:700;white-space:nowrap;}
+  .id-card-name{
+    font-family:'Almarai', sans-serif;font-weight:800;font-size:1.1rem;
+    color:#fff;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .id-card-stage{
+    font-family:'Almarai', sans-serif;font-size:.9rem;font-weight:800;
+    color:#1F1738;padding:1px 0;overflow:hidden;text-overflow:ellipsis;
+  }
+  .id-card-pair-row{display:flex;gap:18px;margin-top:6px;justify-content:flex-start;}
+  .id-card-pair-item{display:flex;align-items:baseline;gap:5px;min-width:0;}
+  .id-card-pair-item .id-card-label{white-space:nowrap;font-weight:700;color:#1F1738;opacity:.75;}
+  .id-card-pair-item .id-card-value{white-space:nowrap;font-family:'Almarai', sans-serif;font-weight:800;color:#1F1738;}
+  .id-card-visual{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;position:relative;z-index:1;}
+  .id-card-qr{background:#fff;border-radius:10px;padding:5px;line-height:0;display:inline-flex;width:88px;height:88px;align-items:center;justify-content:center;}
+  .id-card-qr img, .id-card-qr canvas{display:block;width:100%;height:100%;border-radius:4px;}
+  .id-card-photo-box{
+    width:60px;height:60px;border-radius:10px;flex-shrink:0;
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+    border:2px solid rgba(255,255,255,.55);background-color:rgba(255,255,255,.1);
+    display:flex;align-items:center;justify-content:center;font-size:1.3rem;
+  }
+  .qr-hint{text-align:center;font-size:.78rem;color:var(--text-muted);margin:8px 0 14px;}
+  .no-animate, .no-animate *{animation:none !important;}
+
+  /* ===================== هيكل التطبيق الجديد (تبويبات) ===================== */
+  #appView{min-height:100vh;display:flex;flex-direction:column;}
+  .app-header{
+    padding:14px 18px 6px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .header-logo{height:48px;width:auto;display:inline-block;}
+  .header-back-btn{
+    width:auto;background:none;border:none;box-shadow:none;color:var(--indigo);
+    font-size:1.7rem;line-height:1;padding:4px 10px;cursor:pointer;
+  }
+  .header-back-btn:active{transform:translateY(1px);}
+
+  .pages-viewport{flex:1;position:relative;overflow:hidden;}
+  .page-panel{
+    position:absolute;inset:0;overflow-y:auto;
+    padding:18px 16px calc(var(--nav-h) + 70px);
+    -webkit-overflow-scrolling:touch;overscroll-behavior-y:auto;
+    transform:translateX(100%);transition:transform .4s cubic-bezier(.22,.61,.36,1);display:none;
+  }
+  .page-panel[data-page="0"]{display:block;transform:translateX(0);}
+
+  .section-title{font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.1rem;color:var(--indigo);margin:0 0 6px;}
+  .section-sub{color:var(--text-muted);font-size:.84rem;margin:0 0 16px;line-height:1.6;}
+
+  .bottom-nav{
+    position:fixed;bottom:0;right:0;left:0;height:var(--nav-h);
+    background:var(--card);box-shadow:0 -10px 30px -18px rgba(53,40,104,.35);
+    display:flex;align-items:stretch;z-index:30;border-radius:24px 24px 0 0;
+  }
+  .nav-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:none;border:none;box-shadow:none;color:var(--text-muted);width:auto;padding:8px 0;
+    font-family:'Almarai', sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;border-radius:0;
+  }
+  .nav-btn .nav-ic{font-size:1.3rem;transition:transform .2s ease;}
+  .nav-btn.active{color:var(--indigo);}
+  .nav-btn.active .nav-ic{transform:translateY(-2px);}
+  .bottom-nav{overflow-x:auto;}
+  .bottom-nav .nav-btn{min-width:74px;}
+  .ranking-columns{display:flex;gap:14px;align-items:flex-start;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x proximity;}
+  .ranking-column{min-width:250px;max-width:290px;scroll-snap-align:start;}
+  .ranking-column{background:#FBFAFD;border:2px solid #EFEAF8;border-radius:18px;padding:14px;}
+  .ranking-total{font-family:'Baloo Bhaijaan 2',sans-serif;font-size:1.2rem;font-weight:800;color:var(--violet);margin:6px 0 12px;}
+
+  /* ===================== عناصر مشتركة لإدارة القوائم (الجوائز / النصائح) ===================== */
+  .list-item{
+    display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;
+    background:#FBFAFD;border:2px solid #EFEAF8;margin-bottom:10px;
+  }
+  .list-item-thumb{
+    width:46px;height:46px;border-radius:12px;flex-shrink:0;background-size:cover;background-position:center;
+    background-color:#fff;border:2px solid #EFEAF8;display:flex;align-items:center;justify-content:center;font-size:1.3rem;
+  }
+  .list-item-body{flex:1;min-width:0;}
+  .list-item-title{font-weight:800;color:var(--indigo);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .list-item-sub{font-size:.78rem;color:var(--text-muted);margin-top:2px;}
+  .list-item-actions{display:flex;gap:6px;flex-shrink:0;}
+  .group-action-btn{
+    width:auto!important;min-width:0!important;padding:7px 10px!important;margin:0!important;
+    border-radius:10px!important;font-size:.72rem!important;line-height:1.2!important;
+    box-shadow:none!important;white-space:nowrap;
+  }
+  .group-admin-card{background:#FBFAFD;border:2px solid #EFEAF8;border-radius:16px;margin-bottom:10px;overflow:hidden;}
+  .group-admin-card summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;cursor:pointer;list-style:none;}
+  .group-admin-card summary::-webkit-details-marker{display:none;}
+  .group-admin-card .group-chevron{color:var(--violet);font-size:1.15rem;transition:transform .2s;}
+  .group-admin-card[open] .group-chevron{transform:rotate(180deg);}
+  .group-actions-expanded{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 14px 14px;border-top:1px solid #EEE8F7;padding-top:12px;}
+  .icon-btn{
+    width:auto;padding:8px;border-radius:10px;background:#F3F0FA;color:var(--indigo);
+    box-shadow:none;font-size:.95rem;line-height:1;cursor:pointer;
+  }
+  .icon-btn.danger{background:#FBE9ED;color:var(--error);}
+  .list-empty{color:var(--text-muted);font-size:.84rem;padding:6px 2px;}
+
+  .daily-tip-preview{
+    background:linear-gradient(95deg, var(--blue), var(--violet));color:#fff;border-radius:16px;
+    padding:14px 16px;margin-bottom:16px;font-size:.88rem;font-weight:700;
+  }
+  .daily-tip-preview .lbl{font-size:.68rem;opacity:.85;font-weight:700;margin-bottom:4px;}
+
+  .placeholder-box{text-align:center;padding:40px 16px;color:var(--text-muted);}
+  .placeholder-box .ic{font-size:2.2rem;margin-bottom:10px;}
+
+  /* checkbox يحتاج استرجاع الشكل الافتراضي (appearance:auto) عشان تبان علامة ✓ —
+     قاعدة input العامة بالأعلى تحذفها بـ appearance:none بالغلط */
+  input[type="checkbox"]{
+    appearance:auto;-webkit-appearance:auto;
+    width:20px;height:20px;margin:0;padding:0;border-radius:4px;accent-color:var(--violet);flex-shrink:0;
+  }
+
+  /* ===================== رصيد الطلاب ===================== */
+  .balance-display{font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:800;font-size:2.2rem;color:var(--indigo);text-align:center;margin:6px 0 16px;}
+  .amount-selector{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .amount-chip{
+    flex:1;min-width:54px;width:auto;padding:12px 8px;border-radius:14px;font-size:.92rem;
+    background:#F3F0FA;color:var(--indigo);box-shadow:none;font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;
+  }
+  .pending-box{
+    display:flex;align-items:center;justify-content:center;gap:10px;background:#FBFAFD;border:2px solid #EFEAF8;
+    border-radius:14px;padding:10px;margin-bottom:14px;font-weight:800;
+  }
+  .pending-box .icon-btn{padding:4px 8px;font-size:.8rem;}
+  #customAmountInput, #bulkCustomAmountInput{margin-bottom:14px;text-align:center;}
+
+  .balance-row{cursor:pointer;}
+
+  .log-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #EFEAF8;font-size:.86rem;}
+  .log-row:last-child{border-bottom:none;}
+  .log-date{color:var(--text-muted);}
+  .log-amount{font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:800;}
+
+  .bulk-bar{
+    position:fixed;bottom:var(--nav-h);right:0;left:0;background:var(--card);
+    box-shadow:0 -10px 30px -18px rgba(53,40,104,.35);padding:14px 16px;z-index:35;
+    border-radius:20px 20px 0 0;
+  }
+  #bulkSelectedCount{display:block;text-align:center;font-weight:800;color:var(--indigo);margin-bottom:10px;font-size:.88rem;}
+
+  /* مسافة إضافية أسفل قائمة الطلاب لما يظهر شريط التحديد الجماعي، عشان
+     آخر الطلاب بالقائمة ما ينغطّوا بالشريط ويقدر يكمل سكرول لهم */
+  #balanceListView.bulk-bar-open #balanceStudentsList{padding-bottom:230px;}
+
+  /* مربع تحديد الكل الحقيقي + فلتر الحضور الثلاثي */
+  .balance-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  .select-all-label{
+    display:flex;align-items:center;gap:6px;background:#F3F0FA;color:var(--indigo);
+    border-radius:999px;padding:8px 14px;font-size:.84rem;font-weight:800;cursor:pointer;margin:0;
+  }
+  .select-all-label input{margin:0;}
+  .reward-group-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .reward-group-btn{
+    width:auto;padding:10px 16px;font-size:.86rem;border-radius:999px;
+    background:#F3F0FA;color:var(--indigo);box-shadow:none;font-weight:800;
+  }
+  .reward-group-btn.active{background:linear-gradient(95deg, var(--violet), var(--pink));color:#fff;}
+
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
+</style>
+</head>
+<body>
+
+<!-- ===================== شاشة تسجيل دخول المشرف ===================== -->
+<div id="supervisorLoginView" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;">
+  <div class="login-card" style="width:100%;max-width:420px;background:var(--card);border-radius:var(--radius);padding:30px 26px 34px;box-shadow:0 18px 50px -12px rgba(53,40,104,.22);">
+    <img class="app-logo" id="loginLogoImg" alt="هواية" style="display:block;width:100%;max-width:170px;margin:0 auto 16px;">
+    <h1 style="font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.45rem;color:var(--indigo);text-align:center;margin:0 0 6px;">تسجيل دخول المشرف</h1>
+    <p style="text-align:center;color:var(--text-muted);font-size:.9rem;margin:0 0 22px;">اختر اسمك وأدخل رقمك السري</p>
+    <form id="supervisorLoginForm">
+      <label>اسمك
+        <select id="supervisorNameSelect" required>
+          <option value="" disabled selected>اختر اسمك</option>
+          <option>فارس مقبول</option>
+          <option>ناصر الصياح</option>
+          <option>عبدالرحمن بامشموس</option>
+          <option>بشارة الزبير</option>
+          <option>عبدالعزيز الجامع</option>
+          <option>فهد الخضير</option>
+          <option>أسامة نور</option>
+        </select>
+      </label>
+      <label>الرقم السري<input type="text" id="supervisorPinInput" inputmode="numeric" maxlength="4" placeholder="٤ أرقام" required></label>
+      <button type="submit" id="supervisorLoginBtn">دخول</button>
+      <p class="error" id="supervisorLoginError"></p>
+    </form>
+  </div>
+</div>
+
+<div id="appView" class="hidden">
+  <div class="app-header">
+    <img id="headerLogoImg" class="header-logo" alt="هواية">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button type="button" id="supervisorLogoutBtn" class="header-back-btn" aria-label="تسجيل خروج" style="font-size:1.1rem;">🚪</button>
+      <button type="button" id="headerBackBtn" class="header-back-btn hidden" aria-label="رجوع">←</button>
+    </div>
+  </div>
+
+  <!-- نافذة شرح التثبيت على آيفون (مشتركة بكل التبويبات) -->
+  <div id="iosInstallOverlay" class="ios-install-overlay hidden">
+    <div class="ios-install-card">
+      <h3>📱 تثبيت التطبيق على آيفون</h3>
+      <p><span class="ios-step-num">1</span> اضغط زر المشاركة <span class="ios-share-icon">⬆️</span> بالأسفل بمتصفح Safari</p>
+      <p><span class="ios-step-num">2</span> دوّر لتحت واختر <b>"إضافة إلى الشاشة الرئيسية"</b></p>
+      <p><span class="ios-step-num">3</span> اضغط <b>"إضافة"</b> فوق يمين الشاشة</p>
+      <button type="button" id="closeIosHint" class="btn-secondary">حسنًا، فهمت</button>
+    </div>
+  </div>
+
+  <div class="pages-viewport" id="pagesViewport">
+
+    <!-- ============ 3) التسجيل ============ -->
+    <div class="page-panel" data-page="3">
+      <div class="card">
+        <button type="button" id="installBtn" class="install-btn hidden">📲 ثبّت التطبيق على جوالك</button>
+        <div class="welcome-pill">أهلًا بك، يا مشرف هواية ✨</div>
+
+        <div id="formView">
+          <h1>تسجيل طالب جديد</h1>
+          <p class="subtitle">سجّل بيانات الطالب وسلّمه بطاقته</p>
+          <form id="registerForm">
+            <label>اسم الطالب<input type="text" id="studentName" placeholder="اكتب الاسم الكامل" required></label>
+            <label>
+              المرحلة الدراسية
+              <select id="studentStage" required>
+                <option value="" disabled selected>اختر المرحلة</option>
+                <optgroup label="ابتدائي">
+                  <option>أول ابتدائي</option><option>ثاني ابتدائي</option>
+                  <option>ثالث ابتدائي</option><option>رابع ابتدائي</option>
+                  <option>خامس ابتدائي</option><option>سادس ابتدائي</option>
+                </optgroup>
+                <optgroup label="متوسط">
+                  <option>أول متوسط</option><option>ثاني متوسط</option><option>ثالث متوسط</option>
+                </optgroup>
+                <optgroup label="ثانوي">
+                  <option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option>
+                </optgroup>
+              </select>
+            </label>
+            <label>
+              صورة الطالب (اختياري)
+              <div class="photo-source-buttons">
+                <button type="button" id="cameraBtn" class="photo-source-btn">📷 صوّر بالكاميرا</button>
+                <button type="button" id="galleryBtn" class="photo-source-btn">🖼️ اختر من المعرض</button>
+              </div>
+              <input type="file" id="studentImageCamera" accept="image/*" capture="environment" class="hidden">
+              <input type="file" id="studentImageGallery" accept="image/*" class="hidden">
+            </label>
+            <div id="imagePreviewWrap" class="hidden">
+              <img id="imagePreview" class="image-preview" alt="معاينة الصورة">
+            </div>
+            <button type="submit" id="submitBtn">تسجيل الطالب</button>
+            <p class="error" id="errorMsg"></p>
+          </form>
+        </div>
+
+        <div id="successView" class="hidden">
+          <div class="sun-icon">☀️</div>
+          <h1 id="successHeading">معاينة البطاقة</h1>
+          <p class="subtitle" id="successSubtitle"></p>
+
+          <div id="badgeCard" class="id-card">
+            <div class="id-card-info">
+              <div class="id-card-logo-wrap"><img class="id-card-logo app-logo" alt="هواية الصيفي"></div>
+              <div class="id-card-name" id="cardName"></div>
+              <div class="id-card-details-box">
+                <div class="id-card-stage" id="cardStage"></div>
+                <div class="id-card-pair-row">
+                  <div class="id-card-pair-item">
+                    <span class="id-card-label">ID</span>
+                    <span class="id-card-value" id="badgeId"></span>
+                  </div>
+                  <div class="id-card-pair-item">
+                    <span class="id-card-label">PIN</span>
+                    <span class="id-card-value" id="badgePw"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="id-card-visual">
+              <div id="photoBox" class="id-card-photo-box">🧒</div>
+              <div class="id-card-qr" id="qrcode"></div>
+            </div>
+          </div>
+
+          <p class="qr-hint">صوّر الباركود بكاميرا الجوال لتسجيل الدخول مباشرة</p>
+          <p class="qr-hint" id="badgeStatus" style="display:none;"></p>
+
+          <div id="confirmActions">
+            <button id="confirmBtn" type="button">✅ تأكيد وتسجيل الطالب</button>
+            <button id="backBtn" type="button" class="btn-secondary">↩️ رجوع وتعديل البيانات</button>
+            <p class="error" id="confirmErrorMsg"></p>
+          </div>
+
+          <div id="finalActions" class="hidden">
+            <button id="downloadBtn" type="button">تحميل البطاقة</button>
+            <button id="resetBtn" type="button" class="btn-secondary">تسجيل طالب آخر</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- تسجيل جماعي بدون صور -->
+      <div class="card">
+        <div class="section-title">👥 تسجيل جماعي (بدون صور)</div>
+        <div class="section-sub">الصق قائمة أسماء جاهزة، اسم بكل سطر، لتسجيلهم دفعة واحدة بنفس مرحلة دراسية واحدة — يولّد لكل طالب رقمه وكلمة سره تلقائيًا، بدون كاميرا أو بطاقة</div>
+        <form id="bulkRegisterForm">
+          <label>
+            المرحلة الدراسية (لكل الأسماء بالقائمة)
+            <select id="bulkRegisterStage" required>
+              <option value="" disabled selected>اختر المرحلة</option>
+              <optgroup label="ابتدائي">
+                <option>أول ابتدائي</option><option>ثاني ابتدائي</option>
+                <option>ثالث ابتدائي</option><option>رابع ابتدائي</option>
+                <option>خامس ابتدائي</option><option>سادس ابتدائي</option>
+              </optgroup>
+              <optgroup label="متوسط">
+                <option>أول متوسط</option><option>ثاني متوسط</option><option>ثالث متوسط</option>
+              </optgroup>
+              <optgroup label="ثانوي">
+                <option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option>
+              </optgroup>
+            </select>
+          </label>
+          <label>
+            قائمة الأسماء (اسم بكل سطر)
+            <textarea id="bulkRegisterNames" rows="8" placeholder="محمد أحمد العتيبي
+خالد سعد القحطاني
+عبدالله ناصر الدوسري" style="width:100%;margin-top:8px;padding:13px 14px;border-radius:14px;border:2px solid #E7E2F2;background:#FBFAFD;font-family:'Almarai', sans-serif;font-size:1rem;color:var(--text);outline:none;resize:vertical;"></textarea>
+          </label>
+          <button type="submit" id="bulkRegisterSubmitBtn">📋 تسجيل الكل</button>
+          <p class="error" id="bulkRegisterError"></p>
+        </form>
+        <div id="bulkRegisterResults" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ============ 1) الإدارة ============ -->
+    <div class="page-panel" data-page="1">
+
+      <!-- النصيحة الحالية -->
+      <div class="card">
+        <div class="section-title">💡 النصيحة الحالية</div>
+        <div class="section-sub">آخر نصيحة تضيفها هي المعروضة بتطبيق الطالب فقط — النصائح القديمة تبقى محفوظة بالشيت كسجل، بدون عرضها مرة ثانية</div>
+        <div class="daily-tip-preview">
+          <div class="lbl">المعروضة الآن بتطبيق الطالب</div>
+          <div id="currentTipPreview">جاري التحميل...</div>
+        </div>
+      </div>
+
+      <!-- إضافة محتوى جديد -->
+      <div class="card">
+        <div class="section-title">➕ إضافة محتوى جديد</div>
+        <form id="contentForm">
+          <label>نوع المحتوى
+            <select id="contentTypeSelect">
+              <option value="إعلان">إعلان (نص + صورة اختيارية)</option>
+              <option value="نصيحة">نصيحة (نص فقط)</option>
+            </select>
+          </label>
+          <label>النص<input type="text" id="contentTextInput" placeholder="اكتب نص الإعلان أو النصيحة..." required></label>
+
+          <div id="contentImageSection">
+            <label>
+              صورة الإعلان (اختياري)
+              <div class="photo-source-buttons">
+                <button type="button" id="contentCameraBtn" class="photo-source-btn">📷 صوّر بالكاميرا</button>
+                <button type="button" id="contentGalleryBtn" class="photo-source-btn">🖼️ اختر من المعرض</button>
+              </div>
+              <input type="file" id="contentImageCamera" accept="image/*" capture="environment" class="hidden">
+              <input type="file" id="contentImageGallery" accept="image/*" class="hidden">
+            </label>
+            <div id="contentImagePreviewWrap" class="hidden">
+              <img id="contentImagePreview" class="image-preview" alt="معاينة الصورة">
+            </div>
+          </div>
+
+          <button type="submit" id="contentSubmitBtn">➕ إضافة</button>
+          <p class="error" id="contentFormError"></p>
+        </form>
+      </div>
+
+      <!-- قائمة الإعلانات -->
+      <div class="card">
+        <div class="section-title">📋 الإعلانات الحالية</div>
+        <div id="announcementsList"></div>
+      </div>
+    </div>
+
+    <!-- ============ 2) الجوائز ============ -->
+    <div class="page-panel" data-page="2">
+
+      <!-- اختيار المجموعة أولًا -->
+      <div class="card">
+        <div class="section-title">🎯 اختر المرحلة</div>
+        <div class="section-sub">الجوائز والطلبات تُدار لكل مرحلة على حدة</div>
+        <div class="reward-group-tabs">
+          <button type="button" class="reward-group-btn active" data-group="ابتدائي_صغار">أول - رابع ابتدائي</button>
+          <button type="button" class="reward-group-btn" data-group="ابتدائي_كبار">خامس - سادس</button>
+          <button type="button" class="reward-group-btn" data-group="متوسط">المتوسط</button>
+          <button type="button" class="reward-group-btn" data-group="ثانوي">الثانوي</button>
+        </div>
+      </div>
+
+      <!-- إدارة الجوائز -->
+      <div class="card">
+        <div class="section-title">🎁 إدارة الجوائز <span id="currentGroupLabel" style="font-size:.8rem;color:var(--violet);"></span></div>
+        <div class="section-sub">تضاف الجوائز هنا، وتظهر مباشرة بتطبيق الطالب بهذي المرحلة</div>
+
+        <form id="rewardForm">
+          <label>اسم الجائزة<input type="text" id="rewardNameInput" placeholder="مثال: بطاقة ألعاب" required></label>
+          <label>السعر (دينار)<input type="number" id="rewardPriceInput" placeholder="مثال: 300" required></label>
+          <label>الكمية المتاحة (اتركه فاضي = بدون حد)<input type="number" id="rewardQuantityInput" placeholder="مثال: 10" min="0"></label>
+          <label>
+            صورة الجائزة (اختياري)
+            <div class="photo-source-buttons">
+              <button type="button" id="rewardCameraBtn" class="photo-source-btn">📷 صوّر بالكاميرا</button>
+              <button type="button" id="rewardGalleryBtn" class="photo-source-btn">🖼️ اختر من المعرض</button>
+            </div>
+            <input type="file" id="rewardImageCamera" accept="image/*" capture="environment" class="hidden">
+            <input type="file" id="rewardImageGallery" accept="image/*" class="hidden">
+          </label>
+          <div id="rewardImagePreviewWrap" class="hidden">
+            <img id="rewardImagePreview" class="image-preview" alt="معاينة صورة الجائزة">
+          </div>
+          <button type="submit" id="rewardSubmitBtn">➕ إضافة الجائزة</button>
+          <button type="button" id="rewardCancelEditBtn" class="btn-secondary hidden">إلغاء التعديل</button>
+          <p class="error" id="rewardFormError"></p>
+        </form>
+
+        <div id="rewardsListWrap" style="margin-top:16px;">
+          <div id="rewardsList"></div>
+        </div>
+      </div>
+
+      <!-- طلبات الشراء -->
+      <div class="card">
+        <div class="section-title">🛍️ طلبات الشراء</div>
+        <div class="section-sub">قبول الطلب يسلّم الجائزة فعليًا للطالب، رفضه يُرجع الدينار له تلقائيًا</div>
+        <div id="purchaseRequestsList"></div>
+      </div>
+    </div>
+
+    <!-- ============ 0) رصيد الطلاب ============ -->
+    <div class="page-panel" data-page="0">
+
+      <!-- القائمة (افتراضي) -->
+      <div id="balanceListView">
+        <div class="card">
+        <div class="section-title">➕ إضافة نقاط</div>
+          <div class="section-sub">ابحث بالاسم أو الرقم، أو اختر مرحلة. حدد طالب لتعديل رصيده، أو عدة طلاب لتعديل جماعي</div>
+
+          <label>بحث بالاسم أو الرقم<input type="text" id="balanceSearchInput" placeholder="مثال: محمد أو 0537"></label>
+          <label>أو اختر مرحلة
+            <select id="balanceStageSelect">
+              <option value="">كل المراحل</option>
+              <option>أول ابتدائي</option><option>ثاني ابتدائي</option>
+              <option>ثالث ابتدائي</option><option>رابع ابتدائي</option>
+              <option>خامس ابتدائي</option><option>سادس ابتدائي</option>
+              <option value="كل_متوسط">كل المرحلة المتوسطة</option>
+              <option>أول متوسط</option><option>ثاني متوسط</option><option>ثالث متوسط</option>
+              <option value="كل_ثانوي">كل المرحلة الثانوية</option>
+              <option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option>
+            </select>
+          </label>
+
+          <div class="balance-toolbar hidden" id="balanceToolbar">
+            <label class="select-all-label">
+              <input type="checkbox" id="selectAllCheckbox">
+              <span>تحديد الكل</span>
+            </label>
+            <select id="viewFilterSelect" style="flex:1;min-width:160px;margin:0;">
+              <option value="all">الكل</option>
+              <option value="present">✅ الحاضرين</option>
+              <option value="absent">غير الحاضرين</option>
+              <option value="top">🏆 الأعلى نقاطًا</option>
+            </select>
+          </div>
+
+          <div id="balanceStudentsList" style="margin-top:6px;">
+            <p class="list-empty">اختر مرحلة أو ابحث بالاسم/الرقم لعرض الطلاب</p>
+          </div>
+          <button type="button" id="refreshStudentsCacheBtn" class="btn-secondary">🔄 تحديث قائمة الطلاب</button>
+        </div>
+      </div>
+
+      <!-- تفاصيل طالب واحد -->
+      <div id="balanceDetailView" class="hidden">
+
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+            <div id="detailAvatar" class="list-item-thumb" style="width:60px;height:60px;font-size:1.6rem;">🧒</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:800;color:var(--indigo);font-size:1.05rem;" id="detailName"></div>
+              <div style="font-size:.82rem;color:var(--text-muted);" id="detailStage"></div>
+              <div style="display:flex;gap:14px;margin-top:5px;">
+                <span style="font-size:.75rem;font-weight:700;color:var(--text-muted);">ID: <b style="color:var(--indigo);" id="detailId"></b></span>
+                <span style="font-size:.75rem;font-weight:700;color:var(--text-muted);">PIN: <b style="color:var(--indigo);" id="detailPin"></b></span>
+              </div>
+            </div>
+            <button type="button" id="editStudentBtn" class="icon-btn">✏️</button>
+          </div>
+
+          <div id="editStudentForm" class="hidden" style="margin-bottom:16px;">
+            <label>اسم الطالب<input type="text" id="editStudentName"></label>
+            <label>المرحلة الدراسية
+              <select id="editStudentStage">
+                <optgroup label="ابتدائي">
+                  <option>أول ابتدائي</option><option>ثاني ابتدائي</option>
+                  <option>ثالث ابتدائي</option><option>رابع ابتدائي</option>
+                  <option>خامس ابتدائي</option><option>سادس ابتدائي</option>
+                </optgroup>
+                <optgroup label="متوسط">
+                  <option>أول متوسط</option><option>ثاني متوسط</option><option>ثالث متوسط</option>
+                </optgroup>
+                <optgroup label="ثانوي">
+                  <option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option>
+                </optgroup>
+              </select>
+            </label>
+            <label>
+              صورة جديدة (اختياري — تترك صورته الحالية لو لم تختر صورة جديدة)
+              <div class="photo-source-buttons">
+                <button type="button" id="editStudentCameraBtn" class="photo-source-btn">📷 صوّر بالكاميرا</button>
+                <button type="button" id="editStudentGalleryBtn" class="photo-source-btn">🖼️ اختر من المعرض</button>
+              </div>
+              <input type="file" id="editStudentImageCamera" accept="image/*" capture="environment" class="hidden">
+              <input type="file" id="editStudentImageGallery" accept="image/*" class="hidden">
+            </label>
+            <div id="editStudentImagePreviewWrap" class="hidden">
+              <img id="editStudentImagePreview" class="image-preview" alt="معاينة الصورة الجديدة">
+            </div>
+            <button type="button" id="saveStudentEditBtn">💾 حفظ التعديلات</button>
+            <button type="button" id="cancelStudentEditBtn" class="btn-secondary">إلغاء</button>
+            <p class="error" id="editStudentError"></p>
+          </div>
+
+          <div class="balance-display" id="detailBalance">0</div>
+
+          <button type="button" id="manualAttendanceBtn" class="btn-secondary" style="margin-bottom:14px;">✅ تسجيل حضور الآن</button>
+          <p class="error" id="attendanceMsg" style="color:var(--success);margin-bottom:18px;"></p>
+
+          <div class="amount-selector">
+            <button type="button" class="amount-chip" data-amount="10">+10</button>
+            <button type="button" class="amount-chip" data-amount="20">+20</button>
+            <button type="button" class="amount-chip" data-amount="30">+30</button>
+            <button type="button" class="amount-chip" id="customPlusBtn">+</button>
+            <button type="button" class="amount-chip" id="customMinusBtn">−</button>
+          </div>
+          <input type="number" inputmode="numeric" pattern="[0-9]*" id="customAmountInput" class="hidden" placeholder="أدخل عدد النقاط">
+
+          <div id="pendingAmountBox" class="pending-box hidden">
+            <span>المبلغ المحدد:</span>
+            <span id="pendingAmountText"></span>
+            <button type="button" id="clearPendingBtn" class="icon-btn">✖</button>
+          </div>
+
+          <button type="button" id="confirmAdjustBtn" disabled>✅ تأكيد</button>
+          <p class="error" id="adjustError"></p>
+        </div>
+
+        <div class="card">
+          <div class="section-title">📜 سجل العمليات</div>
+          <div id="pointsLogList"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============ 4) المجموعات ============ -->
+    <div class="page-panel" data-page="4">
+      <div class="card">
+        <div class="section-title">👥 إنشاء وإدارة المجموعات</div>
+        <div class="section-sub">أنشئ المجموعة أولًا، ثم أضف أو احذف طلابها من شاشة التعديل</div>
+        <label>العملية<select id="groupModeSelect"><option value="create">إنشاء مجموعة</option><option value="edit">التعديل على مجموعة</option></select></label>
+        <label>المرحلة<select id="groupStageSelect"><option>رابع+خامس+سادس</option><option>متوسط</option><option>ثانوي</option></select></label>
+        <div id="groupCreatePanel"><label>اسم المجموعة<input id="groupNameInput" type="text" placeholder="مثال: فرسان الهمة"></label><button type="button" id="createGroupBtn">إنشاء المجموعة</button></div>
+        <div id="groupEditPanel" class="hidden"><button type="button" id="loadStageGroupsBtn">تأكيد وعرض المجموعات</button><div id="groupsList"></div></div>
+        <p class="error" id="groupFormMsg"></p>
+      </div>
+      <div class="card hidden" id="groupMembersEditor"><div class="section-title" id="groupEditorTitle"></div><label>بحث<input id="groupStudentSearchInput" type="search" placeholder="ابحث بالاسم"></label><div id="groupStudentsPicker"></div><button type="button" id="saveGroupMembersBtn">تأكيد</button><button type="button" id="cancelGroupEditBtn" class="btn-secondary">إلغاء</button></div>
+    </div>
+
+    <!-- ============ 5) الترتيب ============ -->
+    <div class="page-panel" data-page="5">
+      <div class="card">
+        <div class="section-title">🏆 ترتيب المجموعات والطلاب</div>
+        <label>المرحلة<select id="rankingStageSelect"><option>رابع+خامس+سادس</option><option>متوسط</option><option>ثانوي</option></select></label>
+        <label>نوع الترتيب<select id="rankingModeSelect"><option value="groups">مجموعات</option><option value="individuals">أفراد</option></select></label>
+        <label id="rankingGroupsLabel">المجموعات<div id="rankingGroupChecks"></div></label>
+        <label style="display:flex;align-items:center;gap:8px"><input id="rankingDetailsCheck" type="checkbox" checked style="width:22px;margin:0"> إظهار التفاصيل</label>
+        <button type="button" id="showRankingBtn">إظهار الترتيب</button>
+      </div>
+      <div id="rankingColumns" class="ranking-columns"></div>
+    </div>
+
+    <!-- ============ 6) بنود النقاط ============ -->
+    <div class="page-panel" data-page="6">
+      <div class="card">
+        <div class="section-title">⚙️ إدارة بنود النقاط</div>
+        <div class="section-sub">أضف بندًا أو عدّل اسمه ونقاطه وعدد دوائره الأسبوعية (الحد الأقصى 20)</div>
+        <button type="button" id="showAchievementItemFormBtn">➕ إضافة بند</button>
+        <div id="achievementItemForm" class="hidden">
+        <input type="hidden" id="achievementItemKey">
+        <label>اسم البند<input id="achievementItemLabel" type="text" placeholder="مثال: الكرم"></label>
+        <label>نقاط كل دائرة<input id="achievementItemPoints" type="number" inputmode="numeric" min="0" placeholder="مثال: 300"></label>
+        <label>عدد الدوائر طوال الأسبوع<input id="achievementItemMaxChecks" type="number" inputmode="numeric" min="1" max="20" value="1"></label>
+        <select id="achievementItemType" class="hidden"><option value="weekly" selected>أسبوعي</option></select>
+        <button type="button" id="saveAchievementItemBtn">💾 حفظ البند</button>
+        <button type="button" id="cancelAchievementItemEditBtn" class="btn-secondary hidden">إلغاء التعديل</button>
+        <p class="error" id="achievementItemMsg"></p>
+        </div>
+      </div>
+      <div class="card"><div class="section-title">📋 البنود الحالية</div><div id="achievementItemsList"></div></div>
+    </div>
+
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-index="0"><span class="nav-ic">➕</span><span>إضافة نقاط</span></button>
+    <button class="nav-btn" data-index="1"><span class="nav-ic">📣</span><span>الإعلانات</span></button>
+    <button class="nav-btn" data-index="3"><span class="nav-ic">📝</span><span>التسجيل</span></button>
+    <button class="nav-btn" data-index="4"><span class="nav-ic">👥</span><span>المجموعات</span></button>
+    <button class="nav-btn" data-index="5"><span class="nav-ic">🏆</span><span>الترتيب</span></button>
+    <button class="nav-btn" data-index="6"><span class="nav-ic">⚙️</span><span>البنود</span></button>
+  </div>
+
+  <!-- شريط الإجراء الجماعي — يظهر فقط لو فيه طلاب محددين بالقائمة -->
+  <div id="bulkActionBar" class="bulk-bar hidden">
+    <span id="bulkSelectedCount"></span>
+    <button type="button" id="bulkAttendanceBtn" class="btn-secondary" style="margin-bottom:12px;">📋 تحضير</button>
+    <div class="amount-selector">
+      <button type="button" class="amount-chip" data-bulk-amount="10">+10</button>
+      <button type="button" class="amount-chip" data-bulk-amount="20">+20</button>
+      <button type="button" class="amount-chip" data-bulk-amount="30">+30</button>
+      <button type="button" class="amount-chip" id="bulkCustomPlusBtn">+</button>
+      <button type="button" class="amount-chip" id="bulkCustomMinusBtn">−</button>
+    </div>
+    <input type="number" inputmode="numeric" pattern="[0-9]*" id="bulkCustomAmountInput" class="hidden" placeholder="أدخل عدد النقاط">
+    <div id="bulkPendingAmountBox" class="pending-box hidden">
+      <span id="bulkPendingAmountText"></span>
+    </div>
+    <button type="button" id="bulkConfirmBtn" disabled>✅ تأكيد للكل المحددين</button>
+  </div>
+
+  <!-- نافذة تكبير صورة الإعلان — اضغط بأي مكان للإغلاق -->
+  <div id="imageLightbox" class="ios-install-overlay hidden">
+    <img id="lightboxImg" style="max-width:100%;max-height:88vh;border-radius:16px;display:block;" src="" alt="">
+  </div>
+</div>
+
+<script>
+  /* =========================================================================
+     مهم جدًا قبل النشر:
+     1) CLOUDINARY_CLOUD_NAME / CLOUDINARY_UPLOAD_PRESET -> من حساب Cloudinary
+     2) APPS_SCRIPT_URL -> رابط /exec لتطبيق الويب بعد نشر Code.gs
+     3) STUDENT_APP_BASE_URL -> رابط تطبيق الطالب الذي يفتحه الباركود
+     ========================================================================= */
+  const CLOUDINARY_CLOUD_NAME = 'dhv0ypi5d';
+  const CLOUDINARY_UPLOAD_PRESET = 'hawaya_upload';
+  const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload';
+
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVV1SDLMhie0fMAf2qfu-1wB5AmSvRl3u-T7JDm2wUzaut6I8Lo3NTMpd9P9wE706blA/exec';
+ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hawaya-student/';
+  const SUPABASE_URL = 'https://uvcotcfemolqwkgypyeq.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QG-aAmwS2e84wKlPuUhTRw_wgHM-IXO';
+
+  // شعار شريط الهيدر فقط — مستقل عن شعار "هواية" المستخدم بالبطاقة وشاشة الترحيب
+  const HEADER_LOGO_SRC = 'delet.png';
+  document.getElementById('headerLogoImg').src = HEADER_LOGO_SRC;
+
+  // شعار هواية (ملف خارجي مفرّغ الخلفية، بجانب index.html على GitHub)
+  const LOGO_SRC = 'logo.png';
+  document.querySelectorAll('.app-logo').forEach((img) => { img.src = LOGO_SRC; });
+
+  /* ====================================================================
+     تسجيل دخول المشرف — اسم من قائمة + رقم سري 4 أرقام، يبقى محفوظ
+     بنفس الجهاز لين يضغط تسجيل خروج بنفسه
+     ==================================================================== */
+  // معرفات الدخول ليست أسرارًا. الأرقام السرية نفسها محفوظة في Supabase Auth
+  // ولا توضع مطلقًا داخل كود المتصفح أو مستودع GitHub.
+  const SUPERVISOR_ACCOUNTS = {
+    'فارس مقبول': 'faris',
+    'ناصر الصياح': 'nasser',
+    'عبدالرحمن بامشموس': 'abdulrahman',
+    'بشارة الزبير': 'bishara',
+    'عبدالعزيز الجامع': 'abdulaziz',
+    'فهد الخضير': 'fahad',
+    'أسامة نور': 'osama'
+  };
+  const SUPERVISOR_SESSION_KEY = 'hawaya_supervisor_session';
+  let currentSupervisorName = '';
+
+  async function supabaseRequest(path, options = {}) {
+    const headers = Object.assign({
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      'Content-Type': 'application/json'
+    }, options.headers || {});
+    return fetch(SUPABASE_URL + path, Object.assign({}, options, { headers }));
+  }
+
+  async function loadSupervisorProfile(userId, accessToken) {
+    const response = await supabaseRequest(
+      '/rest/v1/profiles?id=eq.' + encodeURIComponent(userId) + '&select=display_name,role,active',
+      { headers: { Authorization: 'Bearer ' + accessToken } }
+    );
+    if (!response.ok) return null;
+    const rows = await response.json();
+    const profile = rows[0];
+    return profile && profile.active && ['supervisor', 'admin'].includes(profile.role) ? profile : null;
+  }
+
+  function showSupervisorLogin(errorText) {
+    document.getElementById('supervisorLoginView').classList.remove('hidden');
+    document.getElementById('appView').classList.add('hidden');
+    document.getElementById('supervisorLoginError').textContent = errorText || '';
+  }
+  function showSupervisorApp(name) {
+    currentSupervisorName = name;
+    document.getElementById('supervisorLoginView').classList.add('hidden');
+    document.getElementById('appView').classList.remove('hidden');
+  }
+
+  document.getElementById('supervisorLoginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('supervisorNameSelect').value;
+    const pin = document.getElementById('supervisorPinInput').value.trim();
+    const errEl = document.getElementById('supervisorLoginError');
+    const loginBtn = document.getElementById('supervisorLoginBtn');
+    errEl.textContent = '';
+
+    if (!name || !pin) { errEl.textContent = 'اختر اسمك وأدخل رقمك السري'; return; }
+    if (!/^\d{4}$/.test(pin)) { errEl.textContent = 'أدخل الرقم السري المكوّن من ٤ أرقام'; return; }
+    const account = SUPERVISOR_ACCOUNTS[name];
+    if (!account) { errEl.textContent = 'حساب المشرف غير موجود'; return; }
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'جاري الدخول...';
+    try {
+      const response = await supabaseRequest('/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: account + '@supervisors.hewaya.local',
+          password: 'HW' + pin
+        })
+      });
+      const auth = await response.json();
+      if (!response.ok || !auth.access_token || !auth.user) throw new Error('invalid_login');
+      const profile = await loadSupervisorProfile(auth.user.id, auth.access_token);
+      if (!profile) throw new Error('not_staff');
+      const session = {
+        name: profile.display_name || name,
+        accessToken: auth.access_token,
+        refreshToken: auth.refresh_token,
+        expiresAt: Date.now() + (Number(auth.expires_in || 3600) * 1000)
+      };
+      localStorage.setItem(SUPERVISOR_SESSION_KEY, JSON.stringify(session));
+      showSupervisorApp(session.name);
+    } catch (_) {
+      errEl.textContent = 'الاسم أو الرقم السري غير صحيح';
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'دخول';
+    }
+  });
+
+  document.getElementById('supervisorLogoutBtn').addEventListener('click', () => {
+    localStorage.removeItem(SUPERVISOR_SESSION_KEY);
+    document.getElementById('supervisorLoginForm').reset();
+    currentSupervisorName = '';
+    showSupervisorLogin();
+  });
+
+  (async function initSupervisorAuth() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY) || 'null');
+      if (!saved || !saved.accessToken || Date.now() >= saved.expiresAt) throw new Error('expired');
+      const response = await supabaseRequest('/auth/v1/user', {
+        headers: { Authorization: 'Bearer ' + saved.accessToken }
+      });
+      if (!response.ok) throw new Error('invalid');
+      const user = await response.json();
+      const profile = await loadSupervisorProfile(user.id, saved.accessToken);
+      if (!profile) throw new Error('not_staff');
+      showSupervisorApp(profile.display_name || saved.name);
+    } catch (_) {
+      localStorage.removeItem(SUPERVISOR_SESSION_KEY);
+      showSupervisorLogin();
+    }
+  })();
+
+  /**
+   * زر تثبيت التطبيق: بالأندرويد/كروم نستخدم نافذة التثبيت التلقائية
+   * (beforeinstallprompt). بالآيفون/سفاري ما تدعم آبل هذا إطلاقًا، فنعرض
+   * شرح بالخطوات اليدوية بدالها.
+   */
+  const installBtn = document.getElementById('installBtn');
+  const iosInstallOverlay = document.getElementById('iosInstallOverlay');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  let deferredInstallPrompt = null;
+
+  if (!isStandalone && isIOS) {
+    installBtn.classList.remove('hidden');
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if (!isStandalone) installBtn.classList.remove('hidden');
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      installBtn.classList.add('hidden');
+    } else if (isIOS) {
+      iosInstallOverlay.classList.remove('hidden');
+    }
+  });
+
+  document.getElementById('closeIosHint').addEventListener('click', () => {
+    iosInstallOverlay.classList.add('hidden');
+  });
+
+  /* ====================================================================
+     التنقل بين التبويبات الثلاثة — نفس آلية تطبيق الطالب بالضبط:
+     الانزلاق يكون بنفس جهة الأيقونة المضغوطة
+     ==================================================================== */
+  const panels = [0, 1, 2, 3, 4, 5, 6].map((i) => document.querySelector('.page-panel[data-page="' + i + '"]'));
+  const navButtons = document.querySelectorAll('.nav-btn');
+  let currentIndex = 0;
+
+  function goToPage(newIndex) {
+    if (newIndex === currentIndex || !panels[newIndex]) return;
+
+    const oldPanel = panels[currentIndex];
+    const newPanel = panels[newIndex];
+    const targetIsToTheLeft = newIndex > currentIndex;
+
+    const enterFrom = targetIsToTheLeft ? '-100%' : '100%';
+    const exitTo = targetIsToTheLeft ? '100%' : '-100%';
+
+    newPanel.style.transition = 'none';
+    newPanel.style.transform = 'translateX(' + enterFrom + ')';
+    newPanel.style.display = 'block';
+    newPanel.getBoundingClientRect();
+    newPanel.style.transition = '';
+
+    requestAnimationFrame(() => {
+      oldPanel.style.transform = 'translateX(' + exitTo + ')';
+      newPanel.style.transform = 'translateX(0)';
+    });
+
+    const onEnd = (ev) => {
+      if (ev.propertyName !== 'transform') return;
+      oldPanel.style.display = 'none';
+      newPanel.removeEventListener('transitionend', onEnd);
+    };
+    newPanel.addEventListener('transitionend', onEnd);
+
+    currentIndex = newIndex;
+    navButtons.forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.index) === newIndex));
+    document.getElementById('headerBackBtn').classList.add('hidden'); // مفيد فقط داخل تفاصيل طالب برصيد الطلاب
+
+    // تحميل بيانات الإعلانات والنصيحة أول ما يُفتح هذا التبويب لأول مرة
+    if (newIndex === 1 && !announcementsLoaded) {
+      announcementsLoaded = true;
+      loadCurrentTip();
+      loadAnnouncements();
+    }
+
+    // تحميل الجوائز وطلبات الشراء أول ما يُفتح تبويب الجوائز لأول مرة
+    if (newIndex === 2 && !rewardsTabLoaded) {
+      rewardsTabLoaded = true;
+      document.getElementById('currentGroupLabel').textContent = '(' + REWARD_GROUP_LABELS[currentRewardGroup] + ')';
+      loadRewards();
+      loadPurchaseRequests();
+    }
+    if (newIndex === 4) loadGroupsAdmin();
+    if (newIndex === 5) loadRankingGroupOptions();
+    if (newIndex === 6) loadAchievementItemsAdmin();
+  }
+
+  navButtons.forEach((btn) => {
+    btn.addEventListener('click', () => goToPage(Number(btn.dataset.index)));
+  });
+
+  /* ====================================================================
+     تسجيل طالب جديد — نفس المنطق الأصلي بالكامل بدون أي تغيير
+     ==================================================================== */
+  const form = document.getElementById('registerForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const formView = document.getElementById('formView');
+  const successView = document.getElementById('successView');
+
+  let compressedImageBase64 = null;
+  let currentStudentId = null;
+  let currentStudentName = null;
+  let lastBadgeBlob = null;
+
+  const cameraBtn = document.getElementById('cameraBtn');
+  const galleryBtn = document.getElementById('galleryBtn');
+  const cameraInput = document.getElementById('studentImageCamera');
+  const galleryInput = document.getElementById('studentImageGallery');
+
+  cameraBtn.addEventListener('click', () => cameraInput.click());
+  galleryBtn.addEventListener('click', () => galleryInput.click());
+
+  async function handleImageSelected(file, sourceBtn) {
+    const wrap = document.getElementById('imagePreviewWrap');
+    cameraBtn.classList.remove('active');
+    galleryBtn.classList.remove('active');
+    if (!file) { compressedImageBase64 = null; wrap.classList.add('hidden'); return; }
+    try {
+      compressedImageBase64 = await compressImage(file, 800, 0.7);
+      document.getElementById('imagePreview').src = 'data:image/jpeg;base64,' + compressedImageBase64;
+      wrap.classList.remove('hidden');
+      if (sourceBtn) sourceBtn.classList.add('active');
+    } catch (err) {
+      errorMsg.textContent = 'تعذر تحميل الصورة، يمكنك المتابعة بدونها';
+      compressedImageBase64 = null; wrap.classList.add('hidden');
+    }
+  }
+
+  cameraInput.addEventListener('change', (e) => handleImageSelected(e.target.files[0], cameraBtn));
+  galleryInput.addEventListener('change', (e) => handleImageSelected(e.target.files[0], galleryBtn));
+
+  function compressImage(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > height && width > maxDim) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+          else if (height >= width && height > maxDim) { width = Math.round(width * (maxDim / height)); height = maxDim; }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
+        };
+        img.onerror = reject;
+        img.src = ev.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadToCloudinary(base64Data, folder, mimeType) {
+    const dataUrl = 'data:' + mimeType + ';base64,' + base64Data;
+    const fd = new FormData();
+    fd.append('file', dataUrl);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    fd.append('folder', folder);
+
+    const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: fd });
+    const json = await res.json();
+    if (!res.ok || !json.secure_url) {
+      throw new Error(json.error ? json.error.message : 'فشل الرفع إلى Cloudinary');
+    }
+    return json.secure_url;
+  }
+
+  async function uploadFileToCloudinary(blob, folder, filename) {
+    const fd = new FormData();
+    fd.append('file', blob, filename);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    fd.append('folder', folder);
+
+    const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: fd });
+    const json = await res.json();
+    if (!res.ok || !json.secure_url) {
+      throw new Error(json.error ? json.error.message : 'فشل الرفع إلى Cloudinary');
+    }
+    return json.secure_url;
+  }
+
+  function canvasToPngBlob(canvas) {
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }
+
+  async function callAppsScript(payload) {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  /* ====================================================================
+     بدائل النوافذ المنبثقة (confirm/alert) — زر "تأكيد" يطلع جنب الزر
+     الأصلي مباشرة بدل أي نافذة منبثقة أو تنبيه عائم
+     ==================================================================== */
+  function showInlineConfirm(triggerBtn, onConfirm) {
+    if (triggerBtn.dataset.confirming === '1') return;
+    triggerBtn.dataset.confirming = '1';
+    triggerBtn.style.display = 'none';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.className = 'icon-btn';
+    confirmBtn.style.background = 'var(--blue)';
+    confirmBtn.style.color = '#fff';
+    confirmBtn.textContent = 'تأكيد';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'icon-btn';
+    cancelBtn.textContent = '✖';
+
+    function cleanup() {
+      confirmBtn.remove();
+      cancelBtn.remove();
+      triggerBtn.style.display = '';
+      delete triggerBtn.dataset.confirming;
+    }
+
+    confirmBtn.addEventListener('click', async () => {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '...';
+      try {
+        await onConfirm();
+      } catch (err) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = (err && err.message) ? err.message : 'فشل';
+        setTimeout(cleanup, 2200);
+        return;
+      }
+      cleanup();
+    });
+    cancelBtn.addEventListener('click', cleanup);
+
+    triggerBtn.insertAdjacentElement('afterend', confirmBtn);
+    confirmBtn.insertAdjacentElement('afterend', cancelBtn);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMsg.textContent = '';
+    const name = document.getElementById('studentName').value.trim();
+    const stage = document.getElementById('studentStage').value;
+    if (!name || !stage) { errorMsg.textContent = 'الاسم والمرحلة مطلوبان'; return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'جاري التسجيل...';
+
+    try {
+      let imageUrl = '';
+      if (compressedImageBase64) {
+        imageUrl = await uploadToCloudinary(compressedImageBase64, 'student-photos', 'image/jpeg');
+      }
+
+      const data = await callAppsScript({
+        action: 'generatePreview',
+        name: name,
+        stage: stage,
+        imageUrl: imageUrl
+      });
+
+      if (!data.success) {
+        errorMsg.textContent = data.error || 'حدث خطأ، حاول مرة أخرى';
+        submitBtn.disabled = false; submitBtn.textContent = 'تسجيل الطالب';
+        return;
+      }
+      showPreview(data);
+      submitBtn.disabled = false; submitBtn.textContent = 'تسجيل الطالب';
+    } catch (err) {
+      errorMsg.textContent = 'حدث خطأ في الاتصال: ' + err.message;
+      submitBtn.disabled = false; submitBtn.textContent = 'تسجيل الطالب';
+    }
+  });
+
+  let pendingRegistration = null;
+
+  function setPhotoBox(url) {
+    const photoBox = document.getElementById('photoBox');
+    return new Promise((resolve) => {
+      if (!url) {
+        photoBox.style.backgroundImage = '';
+        photoBox.textContent = '🧒';
+        resolve();
+        return;
+      }
+      photoBox.textContent = '';
+      const preloadImg = new Image();
+      preloadImg.crossOrigin = 'anonymous';
+      const timer = setTimeout(() => { photoBox.style.backgroundImage = "url('" + url + "')"; resolve(); }, 4000);
+      preloadImg.onload = () => { clearTimeout(timer); photoBox.style.backgroundImage = "url('" + url + "')"; resolve(); };
+      preloadImg.onerror = () => { clearTimeout(timer); photoBox.textContent = '🧒'; resolve(); };
+      preloadImg.src = url;
+    });
+  }
+
+  function showPreview(data) {
+    pendingRegistration = data;
+    lastBadgeBlob = null;
+
+    document.getElementById('successHeading').textContent = 'معاينة البطاقة';
+    document.getElementById('successSubtitle').textContent = 'راجع بيانات ' + data.name + ' قبل التسجيل النهائي';
+    document.getElementById('cardName').textContent = data.name;
+    document.getElementById('cardStage').textContent = data.stage || '';
+    document.getElementById('badgeId').textContent = data.id;
+    document.getElementById('badgePw').textContent = data.password;
+
+    const qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = '';
+    const loginLink = STUDENT_APP_BASE_URL + '?id=' + data.id + '&pw=' + data.password;
+    new QRCode(qrContainer, { text: loginLink, width: 160, height: 160, colorDark: '#15101F', colorLight: '#ffffff' });
+
+    setPhotoBox(data.imageUrl);
+
+    formView.classList.add('hidden');
+    successView.classList.remove('hidden');
+
+    document.getElementById('confirmErrorMsg').textContent = '';
+    document.getElementById('confirmActions').classList.remove('hidden');
+    document.getElementById('finalActions').classList.add('hidden');
+    document.getElementById('badgeStatus').style.display = 'none';
+
+    const confirmBtn = document.getElementById('confirmBtn');
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = '✅ تأكيد وتسجيل الطالب';
+  }
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    pendingRegistration = null;
+    successView.classList.add('hidden');
+    formView.classList.remove('hidden');
+  });
+
+  document.getElementById('confirmBtn').addEventListener('click', async () => {
+    if (!pendingRegistration) return;
+    const confirmBtn = document.getElementById('confirmBtn');
+    const confirmErrorMsg = document.getElementById('confirmErrorMsg');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'جاري التأكيد...';
+    confirmErrorMsg.textContent = '';
+
+    try {
+      const result = await callAppsScript({
+        action: 'confirmRegister',
+        id: pendingRegistration.id,
+        password: pendingRegistration.password,
+        name: pendingRegistration.name,
+        stage: pendingRegistration.stage,
+        imageUrl: pendingRegistration.imageUrl
+      });
+
+      if (!result.success) {
+        confirmErrorMsg.textContent = result.error || 'تعذر تأكيد التسجيل، حاول مرة أخرى';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '✅ تأكيد وتسجيل الطالب';
+        return;
+      }
+
+      currentStudentId = pendingRegistration.id;
+      currentStudentName = pendingRegistration.name;
+
+      document.getElementById('successHeading').textContent = 'تم تسجيل الطالب';
+      document.getElementById('successSubtitle').textContent = 'باسم ' + pendingRegistration.name;
+      document.getElementById('confirmActions').classList.add('hidden');
+      document.getElementById('finalActions').classList.remove('hidden');
+
+      startBadgeBackgroundSave(pendingRegistration);
+      pendingRegistration = null;
+    } catch (err) {
+      confirmErrorMsg.textContent = 'حدث خطأ في الاتصال: ' + (err && err.message ? err.message : err);
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '✅ تأكيد وتسجيل الطالب';
+    }
+  });
+
+  async function saveBadgeLink(id, badgeUrl) {
+    try {
+      const data = await withTimeout(
+        callAppsScript({ action: 'saveBadge', id: id, badgeUrl: badgeUrl }),
+        6000,
+        'فشل fetch أو تجاوز 6 ثواني'
+      );
+      if (data.success) return { ok: true, confirmed: true };
+      return { ok: false, confirmed: true, error: data.error || 'الشيت رفض الحفظ' };
+    } catch (_) {
+      if (navigator.sendBeacon) {
+        const payload = JSON.stringify({ action: 'saveBadge', id: id, badgeUrl: badgeUrl });
+        const sent = navigator.sendBeacon(APPS_SCRIPT_URL, payload);
+        if (sent) return { ok: true, confirmed: false };
+        return { ok: false, confirmed: false, error: 'فشل sendBeacon أيضًا' };
+      }
+      return { ok: false, confirmed: false, error: 'هذا المتصفح لا يدعم sendBeacon' };
+    }
+  }
+
+  function startBadgeBackgroundSave(data) {
+    const badgeStatus = document.getElementById('badgeStatus');
+    badgeStatus.style.display = 'none';
+
+    setPhotoBox(data.imageUrl)
+      .then(() => withTimeout(saveBadge(), 20000, 'انتهت المهلة (20 ثانية) — تحقق من الاتصال بالإنترنت'))
+      .then((result) => {
+        if (result.ok && result.confirmed !== false) {
+          badgeStatus.style.display = 'none';
+        } else if (result.ok && result.confirmed === false) {
+          badgeStatus.style.color = 'var(--text-muted)';
+          badgeStatus.textContent = '📨 تم إرسال طلب حفظ البطاقة، تحقّق من الشيت بعد قليل للتأكد';
+          badgeStatus.style.display = 'block';
+        } else {
+          badgeStatus.style.color = 'var(--error)';
+          badgeStatus.textContent = '⚠️ تعذر حفظ البطاقة: ' + result.error;
+          badgeStatus.style.display = 'block';
+        }
+      })
+      .catch((err) => {
+        badgeStatus.style.color = 'var(--error)';
+        badgeStatus.textContent = '⚠️ تعذر حفظ البطاقة: ' + (err && err.message ? err.message : err);
+        badgeStatus.style.display = 'block';
+      });
+  }
+
+  function withTimeout(promise, ms, timeoutMessage) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(timeoutMessage)), ms);
+      promise.then(
+        (val) => { clearTimeout(timer); resolve(val); },
+        (err) => { clearTimeout(timer); reject(err); }
+      );
+    });
+  }
+
+  function ensureFontsLoaded() {
+    if (!document.fonts) return Promise.resolve();
+    return withTimeout(
+      Promise.all([
+        document.fonts.load('800 16px Almarai'),
+        document.fonts.load('700 16px Almarai'),
+        document.fonts.load('400 16px Almarai')
+      ]).then(() => document.fonts.ready),
+      2000,
+      'مهلة تحميل الخط'
+    ).catch(() => {});
+  }
+
+  function renderArabicTextToImage(text, fontWeight, fontSizePx, color) {
+    const measureCanvas = document.createElement('canvas');
+    const mctx = measureCanvas.getContext('2d');
+    const fontStr = fontWeight + ' ' + fontSizePx + 'px Almarai';
+    mctx.font = fontStr;
+    mctx.direction = 'rtl';
+    const metrics = mctx.measureText(text);
+    const width = Math.ceil(metrics.width) + 4;
+    const ascent = metrics.fontBoundingBoxAscent || fontSizePx * 0.9;
+    const descent = metrics.fontBoundingBoxDescent || fontSizePx * 0.25;
+    const height = Math.ceil(ascent + descent) + 4;
+
+    const scale = 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.font = fontStr;
+    ctx.direction = 'rtl';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = color;
+    ctx.fillText(text, width - 2, ascent + 2);
+
+    return { dataUrl: canvas.toDataURL('image/png'), width: width, height: height };
+  }
+
+  function swapArabicTextForImages() {
+    const targets = [
+      { id: 'cardName', weight: 800, size: 17.6 },
+      { id: 'cardStage', weight: 800, size: 14.4 }
+    ];
+    const restores = [];
+
+    targets.forEach((t) => {
+      const el = document.getElementById(t.id);
+      const text = el.textContent;
+      if (!text) return;
+      const color = getComputedStyle(el).color;
+      const rendered = renderArabicTextToImage(text, t.weight, t.size, color);
+
+      const img = document.createElement('img');
+      img.src = rendered.dataUrl;
+      img.style.width = rendered.width + 'px';
+      img.style.height = rendered.height + 'px';
+      img.style.display = 'inline-block';
+      img.style.verticalAlign = 'middle';
+
+      el.textContent = '';
+      el.appendChild(img);
+      restores.push(() => { el.textContent = text; });
+    });
+
+    return () => restores.forEach((fn) => fn());
+  }
+
+  async function renderBadgeCanvas() {
+    const badgeCard = document.getElementById('badgeCard');
+    badgeCard.classList.add('no-animate');
+    await ensureFontsLoaded();
+
+    const restoreText = swapArabicTextForImages();
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    const canvas = await html2canvas(badgeCard, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+
+    restoreText();
+    badgeCard.classList.remove('no-animate');
+    return canvas;
+  }
+
+  async function saveBadge() {
+    try {
+      const canvas = await renderBadgeCanvas();
+      const pngBlob = await canvasToPngBlob(canvas);
+      lastBadgeBlob = pngBlob;
+
+      const badgeUrl = await uploadFileToCloudinary(pngBlob, 'badges', (currentStudentId || 'badge') + '_' + Date.now() + '.png');
+
+      return await saveBadgeLink(currentStudentId, badgeUrl);
+    } catch (err) {
+      return { ok: false, confirmed: true, error: (err && err.message) ? err.message : String(err) };
+    }
+  }
+
+  document.getElementById('downloadBtn').addEventListener('click', async () => {
+    let blob = lastBadgeBlob;
+    if (!blob) {
+      const canvas = await renderBadgeCanvas();
+      blob = await canvasToPngBlob(canvas);
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'بطاقة_' + (currentStudentName || 'طالب') + '.png';
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    form.reset();
+    compressedImageBase64 = null; currentStudentId = null; currentStudentName = null; lastBadgeBlob = null;
+    document.getElementById('imagePreviewWrap').classList.add('hidden');
+    cameraBtn.classList.remove('active'); galleryBtn.classList.remove('active');
+    submitBtn.disabled = false; submitBtn.textContent = 'تسجيل الطالب';
+    successView.classList.add('hidden');
+    formView.classList.remove('hidden');
+  });
+
+  /* ====================================================================
+     تسجيل جماعي بدون صور — قائمة أسماء جاهزة بمرحلة واحدة، يولّد لكل
+     طالب ID ورقم سري تلقائيًا بدون كاميرا أو بطاقة
+     ==================================================================== */
+  document.getElementById('bulkRegisterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const stage = document.getElementById('bulkRegisterStage').value;
+    const namesRaw = document.getElementById('bulkRegisterNames').value;
+    const btn = document.getElementById('bulkRegisterSubmitBtn');
+    const errEl = document.getElementById('bulkRegisterError');
+    errEl.textContent = '';
+
+    const names = namesRaw.split('\n').map((n) => n.trim()).filter((n) => n.length > 0);
+    if (!stage) { errEl.textContent = 'اختر المرحلة الدراسية'; return; }
+    if (!names.length) { errEl.textContent = 'أدخل اسم طالب واحد على الأقل'; return; }
+
+    btn.disabled = true; btn.textContent = 'جاري التسجيل...';
+    try {
+      const result = await callAppsScript({ action: 'bulkRegisterStudents', names: names, stage: stage });
+      if (!result.success) { errEl.textContent = result.error || 'تعذر التسجيل الجماعي'; return; }
+
+      renderBulkRegisterResults(result.results, stage);
+      document.getElementById('bulkRegisterNames').value = '';
+
+      // تحديث ذاكرة قائمة الطلاب لو محمّلة بالفعل، عشان الطلاب الجدد يطلعو فورًا برصيد الطلاب
+      if (allStudentsCache) {
+        result.results.forEach((r) => {
+          if (r.success) allStudentsCache.push({ id: r.id, name: r.name, stage: stage, balance: 0, imageUrl: '' });
+        });
+      }
+    } catch (err) {
+      errEl.textContent = 'حدث خطأ في الاتصال';
+    } finally {
+      btn.disabled = false; btn.textContent = '📋 تسجيل الكل';
+    }
+  });
+
+  function renderBulkRegisterResults(results, stage) {
+    const wrap = document.getElementById('bulkRegisterResults');
+    const successList = results.filter((r) => r.success);
+    const failedList = results.filter((r) => !r.success);
+
+    let html = '<div class="card" style="background:#EAF7EF;border:2px solid #BEE6CC;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+    html += '<span style="font-weight:800;color:#27500A;">✅ تم تسجيل ' + successList.length + ' طالب (' + stage + ')</span>';
+    html += '<button type="button" id="copyBulkResultsBtn" class="btn-secondary" style="width:auto;margin:0;padding:8px 16px;font-size:.8rem;">📋 نسخ القائمة</button>';
+    html += '</div>';
+    html += successList.map((r) => `
+      <div class="list-item" style="background:#fff;">
+        <div class="list-item-thumb">🧒</div>
+        <div class="list-item-body">
+          <div class="list-item-title">${r.name}</div>
+          <div class="list-item-sub">ID: ${r.id} · PIN: ${r.password}</div>
+        </div>
+      </div>
+    `).join('');
+
+    if (failedList.length) {
+      html += '<div style="font-weight:800;color:var(--error);margin:14px 0 8px;">⚠️ تعذر تسجيل ' + failedList.length + '</div>';
+      html += failedList.map((r) => '<p class="list-empty">' + r.name + ' — ' + (r.error || 'خطأ') + '</p>').join('');
+    }
+    html += '</div>';
+    wrap.innerHTML = html;
+
+    document.getElementById('copyBulkResultsBtn').addEventListener('click', () => {
+      const text = successList.map((r) => r.name + ' - ID: ' + r.id + ' - PIN: ' + r.password).join('\n');
+      const copyBtn = document.getElementById('copyBulkResultsBtn');
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = '✅ تم النسخ';
+        setTimeout(() => { copyBtn.textContent = '📋 نسخ القائمة'; }, 2000);
+      }).catch(() => {
+        copyBtn.textContent = 'تعذر النسخ';
+        setTimeout(() => { copyBtn.textContent = '📋 نسخ القائمة'; }, 2000);
+      });
+    });
+  }
+
+  /* ====================================================================
+     تبويب "الإعلانات" — محتوى موحّد (إعلان بصورة اختيارية / نصيحة بدون صورة)
+     ==================================================================== */
+  let announcementsLoaded = false;
+  let contentImageBase64 = null;
+
+  const contentTypeSelect = document.getElementById('contentTypeSelect');
+  const contentImageSection = document.getElementById('contentImageSection');
+  const contentCameraBtn = document.getElementById('contentCameraBtn');
+  const contentGalleryBtn = document.getElementById('contentGalleryBtn');
+  const contentCameraInput = document.getElementById('contentImageCamera');
+  const contentGalleryInput = document.getElementById('contentImageGallery');
+
+  function updateContentTypeUI() {
+    const isAnnouncement = contentTypeSelect.value === 'إعلان';
+    contentImageSection.classList.toggle('hidden', !isAnnouncement);
+    if (!isAnnouncement) {
+      contentImageBase64 = null;
+      document.getElementById('contentImagePreviewWrap').classList.add('hidden');
+      contentCameraBtn.classList.remove('active');
+      contentGalleryBtn.classList.remove('active');
+    }
+  }
+  contentTypeSelect.addEventListener('change', updateContentTypeUI);
+  updateContentTypeUI();
+
+  contentCameraBtn.addEventListener('click', () => contentCameraInput.click());
+  contentGalleryBtn.addEventListener('click', () => contentGalleryInput.click());
+
+  async function handleContentImageSelected(file, sourceBtn) {
+    const wrap = document.getElementById('contentImagePreviewWrap');
+    contentCameraBtn.classList.remove('active');
+    contentGalleryBtn.classList.remove('active');
+    if (!file) { contentImageBase64 = null; wrap.classList.add('hidden'); return; }
+    try {
+      contentImageBase64 = await compressImage(file, 900, 0.75);
+      document.getElementById('contentImagePreview').src = 'data:image/jpeg;base64,' + contentImageBase64;
+      wrap.classList.remove('hidden');
+      if (sourceBtn) sourceBtn.classList.add('active');
+    } catch (_) {
+      document.getElementById('contentFormError').textContent = 'تعذر تحميل الصورة، يمكنك المتابعة بدونها';
+      contentImageBase64 = null; wrap.classList.add('hidden');
+    }
+  }
+  contentCameraInput.addEventListener('change', (e) => handleContentImageSelected(e.target.files[0], contentCameraBtn));
+  contentGalleryInput.addEventListener('change', (e) => handleContentImageSelected(e.target.files[0], contentGalleryBtn));
+
+  async function loadCurrentTip() {
+    const el = document.getElementById('currentTipPreview');
+    try {
+      const data = await callAppsScript({ action: 'getDailyTip' });
+      el.textContent = (data.success && data.tip) ? data.tip : 'لا توجد نصيحة مضافة بعد';
+    } catch (_) {
+      el.textContent = 'تعذر تحميل النصيحة الحالية';
+    }
+  }
+
+  function renderAnnouncementsList(items) {
+    const wrap = document.getElementById('announcementsList');
+    if (!items || !items.length) {
+      wrap.innerHTML = '<p class="list-empty">لا توجد إعلانات مضافة بعد</p>';
+      return;
+    }
+    wrap.innerHTML = items.map((a) => `
+      <div class="list-item">
+        <div class="list-item-thumb ${a.imageUrl ? 'has-image' : ''}" ${a.imageUrl ? `data-open-image="${a.imageUrl}" style="background-image:url('${a.imageUrl}');background-size:cover;background-position:center;cursor:pointer;"` : ''}>${a.imageUrl ? '' : '📣'}</div>
+        <div class="list-item-body">
+          <div class="list-item-title">${a.text}</div>
+          <div class="list-item-sub">${a.date || ''}</div>
+        </div>
+        <div class="list-item-actions">
+          <button type="button" class="icon-btn danger" data-delete-announcement="${a.rowIndex}">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+
+    wrap.querySelectorAll('[data-open-image]').forEach((el) => {
+      el.addEventListener('click', () => openImageLightbox(el.dataset.openImage));
+    });
+    wrap.querySelectorAll('[data-delete-announcement]').forEach((btn) => {
+      btn.addEventListener('click', () => showInlineConfirm(btn, () => deleteAnnouncementHandler(Number(btn.dataset.deleteAnnouncement))));
+    });
+  }
+
+  async function loadAnnouncements() {
+    document.getElementById('announcementsList').innerHTML = '<p class="list-empty">جاري التحميل...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getAnnouncements' });
+      renderAnnouncementsList(data.success ? data.announcements : []);
+    } catch (_) {
+      document.getElementById('announcementsList').innerHTML = '<p class="list-empty">تعذر تحميل الإعلانات</p>';
+    }
+  }
+
+  document.getElementById('contentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const type = contentTypeSelect.value;
+    const text = document.getElementById('contentTextInput').value.trim();
+    const btn = document.getElementById('contentSubmitBtn');
+    const errEl = document.getElementById('contentFormError');
+    errEl.textContent = '';
+    if (!text) { errEl.textContent = 'اكتب النص أولًا'; return; }
+
+    btn.disabled = true; btn.textContent = 'جاري الإضافة...';
+    try {
+      if (type === 'نصيحة') {
+        const result = await callAppsScript({ action: 'addTip', text: text });
+        if (!result.success) { errEl.textContent = result.error || 'تعذر إضافة النصيحة'; return; }
+      } else {
+        let imageUrl = '';
+        if (contentImageBase64) {
+          imageUrl = await uploadToCloudinary(contentImageBase64, 'announcement-photos', 'image/jpeg');
+        }
+        const result = await callAppsScript({ action: 'addAnnouncement', text: text, imageUrl: imageUrl });
+        if (!result.success) { errEl.textContent = result.error || 'تعذر إضافة الإعلان'; return; }
+      }
+
+      document.getElementById('contentForm').reset();
+      contentImageBase64 = null;
+      document.getElementById('contentImagePreviewWrap').classList.add('hidden');
+      updateContentTypeUI();
+      await loadCurrentTip();
+      await loadAnnouncements();
+    } catch (err) {
+      errEl.textContent = 'حدث خطأ في الاتصال';
+    } finally {
+      btn.disabled = false; btn.textContent = '➕ إضافة';
+    }
+  });
+
+  async function deleteAnnouncementHandler(rowIndex) {
+    const result = await callAppsScript({ action: 'deleteAnnouncement', rowIndex: rowIndex });
+    if (!result.success) throw new Error(result.error || 'فشل الحذف');
+    await loadAnnouncements();
+  }
+
+  // ===== نافذة تكبير صورة الإعلان =====
+  const imageLightbox = document.getElementById('imageLightbox');
+  function openImageLightbox(url) {
+    document.getElementById('lightboxImg').src = url;
+    imageLightbox.classList.remove('hidden');
+  }
+  imageLightbox.addEventListener('click', () => {
+    imageLightbox.classList.add('hidden');
+    document.getElementById('lightboxImg').src = '';
+  });
+
+  /* ====================================================================
+     تبويب "الجوائز" — طلبات الشراء
+     ==================================================================== */
+  let rewardsTabLoaded = false;
+  let currentRewardGroup = 'ابتدائي_صغار'; // المجموعة المختارة بصفحة الجوائز
+  const REWARD_GROUP_LABELS = {
+    'ابتدائي_صغار': 'أول - رابع ابتدائي',
+    'ابتدائي_كبار': 'خامس - سادس',
+    'متوسط': 'المتوسط',
+    'ثانوي': 'الثانوي'
+  };
+
+  document.querySelectorAll('.reward-group-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.reward-group-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentRewardGroup = btn.dataset.group;
+      document.getElementById('currentGroupLabel').textContent = '(' + REWARD_GROUP_LABELS[currentRewardGroup] + ')';
+      cancelRewardEdit();
+      loadRewards();
+      loadPurchaseRequests();
+    });
+  });
+
+  function purchaseStatusBadge(status) {
+    if (status === 'مقبول') return '<span style="color:var(--success);font-weight:800;">✅ مقبول</span>';
+    if (status === 'مرفوض') return '<span style="color:var(--error);font-weight:800;">❌ مرفوض</span>';
+    return '<span style="color:#C98A1F;font-weight:800;">⏳ قيد الانتظار</span>';
+  }
+
+  function renderPurchaseRequests(requests) {
+    const wrap = document.getElementById('purchaseRequestsList');
+    if (!requests || !requests.length) {
+      wrap.innerHTML = '<p class="list-empty">لا توجد طلبات شراء بعد</p>';
+      return;
+    }
+    wrap.innerHTML = requests.map((r) => `
+      <div class="list-item">
+        <div class="list-item-thumb">🛍️</div>
+        <div class="list-item-body">
+          <div class="list-item-title">${r.studentName} — ${r.rewardName}</div>
+          <div class="list-item-sub">${r.price} دينار · ${r.date} · ${purchaseStatusBadge(r.status)}</div>
+        </div>
+        ${r.status === 'قيد الانتظار' ? `
+          <div class="list-item-actions">
+            <button type="button" class="icon-btn" data-approve-req="${r.rowIndex}">✅</button>
+            <button type="button" class="icon-btn danger" data-reject-req="${r.rowIndex}">❌</button>
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+
+    wrap.querySelectorAll('[data-approve-req]').forEach((btn) => {
+      btn.addEventListener('click', () => showInlineConfirm(btn, () => handlePurchaseAction('approvePurchaseRequest', Number(btn.dataset.approveReq))));
+    });
+    wrap.querySelectorAll('[data-reject-req]').forEach((btn) => {
+      btn.addEventListener('click', () => showInlineConfirm(btn, () => handlePurchaseAction('rejectPurchaseRequest', Number(btn.dataset.rejectReq))));
+    });
+  }
+
+  async function loadPurchaseRequests() {
+    document.getElementById('purchaseRequestsList').innerHTML = '<p class="list-empty">جاري التحميل...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getPurchaseRequests', group: currentRewardGroup });
+      renderPurchaseRequests(data.success ? data.requests : []);
+    } catch (_) {
+      document.getElementById('purchaseRequestsList').innerHTML = '<p class="list-empty">تعذر تحميل الطلبات</p>';
+    }
+  }
+
+  async function handlePurchaseAction(action, rowIndex) {
+    const result = await callAppsScript({ action: action, rowIndex: rowIndex });
+    if (!result.success) throw new Error(result.error || 'تعذر تنفيذ الإجراء');
+    await loadPurchaseRequests();
+    if (action === 'rejectPurchaseRequest') await loadRewards(); // الكمية رجعت، حدّث القائمة
+  }
+
+  /* ====================================================================
+     تبويب "الإدارة" — الجوائز (إضافة / تعديل / حذف)
+     ==================================================================== */
+  let editingRewardIndex = null;
+  let rewardImageBase64 = null;
+  let lastRewardsData = [];
+
+  const rewardCameraBtn = document.getElementById('rewardCameraBtn');
+  const rewardGalleryBtn = document.getElementById('rewardGalleryBtn');
+  const rewardCameraInput = document.getElementById('rewardImageCamera');
+  const rewardGalleryInput = document.getElementById('rewardImageGallery');
+
+  rewardCameraBtn.addEventListener('click', () => rewardCameraInput.click());
+  rewardGalleryBtn.addEventListener('click', () => rewardGalleryInput.click());
+
+  async function handleRewardImageSelected(file, sourceBtn) {
+    const wrap = document.getElementById('rewardImagePreviewWrap');
+    rewardCameraBtn.classList.remove('active');
+    rewardGalleryBtn.classList.remove('active');
+    if (!file) { rewardImageBase64 = null; wrap.classList.add('hidden'); return; }
+    try {
+      rewardImageBase64 = await compressImage(file, 800, 0.7);
+      document.getElementById('rewardImagePreview').src = 'data:image/jpeg;base64,' + rewardImageBase64;
+      wrap.classList.remove('hidden');
+      if (sourceBtn) sourceBtn.classList.add('active');
+    } catch (_) {
+      document.getElementById('rewardFormError').textContent = 'تعذر تحميل الصورة، يمكنك المتابعة بدونها';
+      rewardImageBase64 = null; wrap.classList.add('hidden');
+    }
+  }
+  rewardCameraInput.addEventListener('change', (e) => handleRewardImageSelected(e.target.files[0], rewardCameraBtn));
+  rewardGalleryInput.addEventListener('change', (e) => handleRewardImageSelected(e.target.files[0], rewardGalleryBtn));
+
+  function renderRewardsList(rewards) {
+    lastRewardsData = rewards || [];
+    const wrap = document.getElementById('rewardsList');
+    if (!rewards || !rewards.length) {
+      wrap.innerHTML = '<p class="list-empty">لا توجد جوائز مضافة بعد</p>';
+      return;
+    }
+    wrap.innerHTML = rewards.map((r) => `
+      <div class="list-item">
+        <div class="list-item-thumb" style="${r.imageUrl ? `background-image:url('${r.imageUrl}');background-size:cover;background-position:center;` : ''}">${r.imageUrl ? '' : '🎁'}</div>
+        <div class="list-item-body">
+          <div class="list-item-title">${r.name}</div>
+          <div class="list-item-sub">${r.price} دينار${r.quantity !== null && r.quantity !== undefined ? ' · باقي ' + r.quantity : ''} · ${r.available ? '<span style="color:var(--success);font-weight:800;">متوفرة</span>' : '<span style="color:var(--error);font-weight:800;">نفذت الكمية</span>'}</div>
+        </div>
+        <div class="list-item-actions">
+          <button type="button" class="icon-btn" data-toggle-availability="${r.rowIndex}">${r.available ? '🚫' : '✅'}</button>
+          <button type="button" class="icon-btn" data-edit-reward="${r.rowIndex}">✏️</button>
+          <button type="button" class="icon-btn danger" data-delete-reward="${r.rowIndex}">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+
+    wrap.querySelectorAll('[data-toggle-availability]').forEach((btn) => {
+      btn.addEventListener('click', () => toggleRewardAvailabilityHandler(Number(btn.dataset.toggleAvailability)));
+    });
+    wrap.querySelectorAll('[data-edit-reward]').forEach((btn) => {
+      btn.addEventListener('click', () => startEditReward(Number(btn.dataset.editReward)));
+    });
+    wrap.querySelectorAll('[data-delete-reward]').forEach((btn) => {
+      btn.addEventListener('click', () => showInlineConfirm(btn, () => deleteRewardHandler(Number(btn.dataset.deleteReward))));
+    });
+  }
+
+  async function toggleRewardAvailabilityHandler(rowIndex) {
+    try {
+      await callAppsScript({ action: 'toggleRewardAvailability', rowIndex: rowIndex });
+      await loadRewards();
+    } catch (_) {
+      // تجاهل بصمت — القائمة تبقى بحالتها السابقة، يقدر يعيد المحاولة
+    }
+  }
+
+  async function loadRewards() {
+    document.getElementById('rewardsList').innerHTML = '<p class="list-empty">جاري التحميل...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getRewards', group: currentRewardGroup });
+      renderRewardsList(data.success ? data.rewards : []);
+    } catch (_) {
+      document.getElementById('rewardsList').innerHTML = '<p class="list-empty">تعذر تحميل الجوائز</p>';
+    }
+  }
+
+  function startEditReward(rowIndex) {
+    const reward = lastRewardsData.find((r) => r.rowIndex === rowIndex);
+    if (!reward) return;
+    editingRewardIndex = rowIndex;
+
+    document.getElementById('rewardNameInput').value = reward.name;
+    document.getElementById('rewardPriceInput').value = reward.price;
+    document.getElementById('rewardQuantityInput').value = (reward.quantity !== null && reward.quantity !== undefined) ? reward.quantity : '';
+    rewardImageBase64 = null;
+    const wrap = document.getElementById('rewardImagePreviewWrap');
+    if (reward.imageUrl) {
+      document.getElementById('rewardImagePreview').src = reward.imageUrl;
+      wrap.classList.remove('hidden');
+    } else {
+      wrap.classList.add('hidden');
+    }
+
+    document.getElementById('rewardSubmitBtn').textContent = '💾 حفظ التعديل';
+    document.getElementById('rewardCancelEditBtn').classList.remove('hidden');
+    document.getElementById('rewardForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function cancelRewardEdit() {
+    editingRewardIndex = null;
+    rewardImageBase64 = null;
+    document.getElementById('rewardForm').reset();
+    document.getElementById('rewardImagePreviewWrap').classList.add('hidden');
+    rewardCameraBtn.classList.remove('active');
+    rewardGalleryBtn.classList.remove('active');
+    document.getElementById('rewardSubmitBtn').textContent = '➕ إضافة الجائزة';
+    document.getElementById('rewardCancelEditBtn').classList.add('hidden');
+  }
+  document.getElementById('rewardCancelEditBtn').addEventListener('click', cancelRewardEdit);
+
+  document.getElementById('rewardForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('rewardNameInput').value.trim();
+    const price = document.getElementById('rewardPriceInput').value;
+    const quantity = document.getElementById('rewardQuantityInput').value;
+    const btn = document.getElementById('rewardSubmitBtn');
+    const errEl = document.getElementById('rewardFormError');
+    errEl.textContent = '';
+
+    if (!name || price === '' || isNaN(Number(price))) {
+      errEl.textContent = 'اسم الجائزة والسعر مطلوبان';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = editingRewardIndex !== null ? 'جاري الحفظ...' : 'جاري الإضافة...';
+
+    try {
+      let imageUrl = '';
+      // لو كنا بوضع تعديل وما غيّر صورة جديدة، نحافظ على رابط الصورة القديم
+      if (editingRewardIndex !== null && !rewardImageBase64) {
+        const existing = lastRewardsData.find((r) => r.rowIndex === editingRewardIndex);
+        imageUrl = existing ? existing.imageUrl : '';
+      }
+      if (rewardImageBase64) {
+        imageUrl = await uploadToCloudinary(rewardImageBase64, 'reward-photos', 'image/jpeg');
+      }
+
+      let result;
+      if (editingRewardIndex !== null) {
+        result = await callAppsScript({
+          action: 'updateReward', rowIndex: editingRewardIndex, name: name, price: price, imageUrl: imageUrl, quantity: quantity
+        });
+      } else {
+        result = await callAppsScript({ action: 'addReward', name: name, price: price, imageUrl: imageUrl, group: currentRewardGroup, quantity: quantity });
+      }
+
+      if (!result.success) {
+        errEl.textContent = result.error || 'حدث خطأ، حاول مرة أخرى';
+        return;
+      }
+
+      cancelRewardEdit();
+      await loadRewards();
+    } catch (err) {
+      errEl.textContent = 'حدث خطأ في الاتصال';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = editingRewardIndex !== null ? '💾 حفظ التعديل' : '➕ إضافة الجائزة';
+    }
+  });
+
+  async function deleteRewardHandler(rowIndex) {
+    const result = await callAppsScript({ action: 'deleteReward', rowIndex: rowIndex });
+    if (!result.success) throw new Error(result.error || 'فشل الحذف');
+    if (editingRewardIndex === rowIndex) cancelRewardEdit();
+    await loadRewards();
+  }
+
+  /* ====================================================================
+     تبويب "رصيد الطلاب" — بحث/فلترة، تعديل فردي وجماعي، وسجل العمليات
+
+     مهم لسرعة البحث: نحمّل كل الطلاب مرة واحدة فقط (allStudentsCache)
+     أول ما يُفتح التبويب، وبعدها كل بحث/فلترة يصير محليًا بالمتصفح فورًا
+     بدون أي اتصال جديد بالخادم. زر "تحديث القائمة" يعيد التحميل يدويًا
+     لو احتجت بيانات أحدث (مثلًا بعد تسجيل طالب جديد بنفس الجلسة).
+     ==================================================================== */
+  let allStudentsCache = null;
+  let balanceTabLoaded = false;
+  let allLoadedStudents = [];
+  let selectedBulkIds = new Set();
+  let selectedStudentId = null;
+
+  // رصيد الطلاب صار التبويب الافتراضي الأول، فنحمّل قائمة الطلاب فورًا
+  // عند فتح الصفحة، بدل انتظار ضغطة على التبويب (ما يحتاجها الآن أصلًا)
+  balanceTabLoaded = true;
+  loadAllStudentsCache();
+
+  let pendingAmount = null;
+  let bulkPendingAmount = null;
+  let attendanceFilter = 'all'; // 'all' | 'present' | 'absent'
+  let todayAttendeeIds = null; // null = لسا ما تحمّلت، تُحمّل أول ما يُفعَّل فلتر حضور
+
+  async function loadAllStudentsCache() {
+    const listEl = document.getElementById('balanceStudentsList');
+    listEl.innerHTML = '<p class="list-empty">جاري تحميل قائمة الطلاب...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getStudentsByStage', stage: '' });
+      allStudentsCache = data.success ? data.students : [];
+      filterAndRenderBalanceStudents();
+    } catch (_) {
+      listEl.innerHTML = '<p class="list-empty">تعذر تحميل قائمة الطلاب</p>';
+    }
+  }
+
+  // مرحلة مفردة، أو مجمّعة (كل المتوسط/الثانوي)، أو فاضية (كل المراحل)
+  function studentMatchesStageFilter(student, stageFilter) {
+    if (!stageFilter) return true;
+    if (stageFilter === 'كل_متوسط') return student.stage.indexOf('متوسط') !== -1;
+    if (stageFilter === 'كل_ثانوي') return student.stage.indexOf('ثانوي') !== -1;
+    return student.stage === stageFilter;
+  }
+
+  function filterAndRenderBalanceStudents() {
+    const stage = document.getElementById('balanceStageSelect').value;
+    const query = document.getElementById('balanceSearchInput').value.trim().toLowerCase();
+    const listEl = document.getElementById('balanceStudentsList');
+
+    if (!allStudentsCache) return; // لسا التحميل الأول ما خلص
+
+    if (!stage && !query && attendanceFilter === 'all') {
+      listEl.innerHTML = '<p class="list-empty">اختر مرحلة أو ابحث بالاسم/الرقم لعرض الطلاب</p>';
+      allLoadedStudents = [];
+      document.getElementById('balanceToolbar').classList.add('hidden');
+      return;
+    }
+
+    document.getElementById('balanceToolbar').classList.remove('hidden');
+
+    // القاعدة المشتركة: المرحلة + البحث
+    let filtered = allStudentsCache.filter((s) => studentMatchesStageFilter(s, stage));
+    if (query) {
+      filtered = filtered.filter((s) =>
+        s.id.toLowerCase().indexOf(query) !== -1 || (s.name || '').toLowerCase().indexOf(query) !== -1
+      );
+    }
+
+    // تطبيق الفلتر/الترتيب المختار
+    if (attendanceFilter === 'present' && todayAttendeeIds) {
+      filtered = filtered.filter((s) => todayAttendeeIds.has(s.id));
+    } else if (attendanceFilter === 'absent' && todayAttendeeIds) {
+      filtered = filtered.filter((s) => !todayAttendeeIds.has(s.id));
+    } else if (attendanceFilter === 'top') {
+      filtered = filtered.slice().sort((a, b) => b.balance - a.balance);
+    }
+
+    renderBalanceStudentsList(filtered);
+  }
+
+  // ===== مربع تحديد الكل (checkbox حقيقي، يتزامن بالاتجاهين مع تحديد الأفراد) =====
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+  function updateSelectAllCheckboxState() {
+    if (!allLoadedStudents.length) { selectAllCheckbox.checked = false; return; }
+    selectAllCheckbox.checked = allLoadedStudents.every((s) => selectedBulkIds.has(s.id));
+  }
+
+  selectAllCheckbox.addEventListener('change', () => {
+    allLoadedStudents.forEach((s) => {
+      if (selectAllCheckbox.checked) selectedBulkIds.add(s.id); else selectedBulkIds.delete(s.id);
+    });
+    renderBalanceStudentsList(allLoadedStudents);
+    updateBulkBar();
+  });
+
+  // ===== القائمة المنسدلة: الكل / الحاضرين / غير الحاضرين / الأعلى نقاطًا =====
+  async function ensureTodayAttendeesLoaded() {
+    if (todayAttendeeIds) return;
+    try {
+      const data = await callAppsScript({ action: 'getTodayAttendees' });
+      todayAttendeeIds = new Set(data.success ? data.ids : []);
+    } catch (_) {
+      todayAttendeeIds = new Set();
+    }
+  }
+
+  document.getElementById('viewFilterSelect').addEventListener('change', async (e) => {
+    attendanceFilter = e.target.value;
+
+    // فلترا الحضور يحتاجان قائمة حاضري اليوم — تُحمّل مرة واحدة فقط
+    if (attendanceFilter === 'present' || attendanceFilter === 'absent') {
+      await ensureTodayAttendeesLoaded();
+    }
+    filterAndRenderBalanceStudents();
+  });
+
+  function renderBalanceStudentsList(students) {
+    allLoadedStudents = students || [];
+    const listEl = document.getElementById('balanceStudentsList');
+    if (!students || !students.length) {
+      listEl.innerHTML = '<p class="list-empty">لا يوجد طلاب مطابقين</p>';
+      updateSelectAllCheckboxState();
+      return;
+    }
+    listEl.innerHTML = students.map((s) => `
+      <div class="list-item balance-row" data-open-detail="${s.id}">
+        <input type="checkbox" class="balance-checkbox" data-select-id="${s.id}" ${selectedBulkIds.has(s.id) ? 'checked' : ''}>
+        <div class="list-item-thumb" style="${s.imageUrl ? `background-image:url('${s.imageUrl}');background-size:cover;background-position:center;` : ''}">${s.imageUrl ? '' : '🧒'}</div>
+        <div class="list-item-body">
+          <div class="list-item-title">${s.name}</div>
+          <div class="list-item-sub">${s.stage} · ${s.balance} دينار</div>
+        </div>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('.balance-checkbox').forEach((cb) => {
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', (e) => {
+        const id = e.target.dataset.selectId;
+        if (e.target.checked) selectedBulkIds.add(id); else selectedBulkIds.delete(id);
+        updateBulkBar();
+        updateSelectAllCheckboxState();
+      });
+    });
+    listEl.querySelectorAll('[data-open-detail]').forEach((row) => {
+      row.addEventListener('click', () => openStudentDetail(row.dataset.openDetail));
+    });
+
+    updateSelectAllCheckboxState();
+  }
+
+  document.getElementById('balanceSearchInput').addEventListener('input', filterAndRenderBalanceStudents);
+  document.getElementById('balanceStageSelect').addEventListener('change', filterAndRenderBalanceStudents);
+  document.getElementById('refreshStudentsCacheBtn').addEventListener('click', loadAllStudentsCache);
+
+  // ===== تفاصيل طالب واحد =====
+  function openStudentDetail(id) {
+    const student = allLoadedStudents.find((s) => s.id === id);
+    if (!student) return;
+    selectedStudentId = id;
+    pendingAmount = null;
+    updatePendingDisplay();
+    document.getElementById('customAmountInput').classList.add('hidden');
+    document.getElementById('editStudentForm').classList.add('hidden');
+
+    document.getElementById('detailName').textContent = student.name;
+    document.getElementById('detailStage').textContent = student.stage;
+    document.getElementById('detailId').textContent = student.id;
+    document.getElementById('detailPin').textContent = student.password || '—';
+    document.getElementById('detailBalance').textContent = student.balance + ' نقطة';
+
+    const avatar = document.getElementById('detailAvatar');
+    if (student.imageUrl) { avatar.style.backgroundImage = "url('" + student.imageUrl + "')"; avatar.textContent = ''; }
+    else { avatar.style.backgroundImage = ''; avatar.textContent = '🧒'; }
+
+    document.getElementById('balanceListView').classList.add('hidden');
+    document.getElementById('balanceDetailView').classList.remove('hidden');
+    document.getElementById('headerBackBtn').classList.remove('hidden');
+
+    loadPointsLog(id);
+  }
+
+  document.getElementById('headerBackBtn').addEventListener('click', () => {
+    document.getElementById('balanceDetailView').classList.add('hidden');
+    document.getElementById('balanceListView').classList.remove('hidden');
+    document.getElementById('headerBackBtn').classList.add('hidden');
+    selectedStudentId = null;
+    filterAndRenderBalanceStudents(); // تحديث الأرصدة المعروضة بالقائمة فورًا بعد أي تعديل
+  });
+
+  // ===== تعديل بيانات الطالب (الاسم / المرحلة / الصورة) =====
+  let editStudentImageBase64 = null;
+  const editStudentCameraBtn = document.getElementById('editStudentCameraBtn');
+  const editStudentGalleryBtn = document.getElementById('editStudentGalleryBtn');
+  const editStudentCameraInput = document.getElementById('editStudentImageCamera');
+  const editStudentGalleryInput = document.getElementById('editStudentImageGallery');
+
+  document.getElementById('editStudentBtn').addEventListener('click', () => {
+    const student = allLoadedStudents.find((s) => s.id === selectedStudentId);
+    if (!student) return;
+
+    document.getElementById('editStudentName').value = student.name;
+    document.getElementById('editStudentStage').value = student.stage;
+    editStudentImageBase64 = null;
+    editStudentCameraBtn.classList.remove('active');
+    editStudentGalleryBtn.classList.remove('active');
+
+    const previewWrap = document.getElementById('editStudentImagePreviewWrap');
+    if (student.imageUrl) {
+      document.getElementById('editStudentImagePreview').src = student.imageUrl;
+      previewWrap.classList.remove('hidden');
+    } else {
+      previewWrap.classList.add('hidden');
+    }
+
+    document.getElementById('editStudentError').textContent = '';
+    document.getElementById('editStudentForm').classList.remove('hidden');
+  });
+
+  document.getElementById('cancelStudentEditBtn').addEventListener('click', () => {
+    document.getElementById('editStudentForm').classList.add('hidden');
+  });
+
+  editStudentCameraBtn.addEventListener('click', () => editStudentCameraInput.click());
+  editStudentGalleryBtn.addEventListener('click', () => editStudentGalleryInput.click());
+
+  async function handleEditStudentImageSelected(file, sourceBtn) {
+    const wrap = document.getElementById('editStudentImagePreviewWrap');
+    editStudentCameraBtn.classList.remove('active');
+    editStudentGalleryBtn.classList.remove('active');
+    if (!file) return;
+    try {
+      editStudentImageBase64 = await compressImage(file, 800, 0.7);
+      document.getElementById('editStudentImagePreview').src = 'data:image/jpeg;base64,' + editStudentImageBase64;
+      wrap.classList.remove('hidden');
+      if (sourceBtn) sourceBtn.classList.add('active');
+    } catch (_) {
+      document.getElementById('editStudentError').textContent = 'تعذر تحميل الصورة، يمكنك المتابعة بدونها';
+      editStudentImageBase64 = null;
+    }
+  }
+  editStudentCameraInput.addEventListener('change', (e) => handleEditStudentImageSelected(e.target.files[0], editStudentCameraBtn));
+  editStudentGalleryInput.addEventListener('change', (e) => handleEditStudentImageSelected(e.target.files[0], editStudentGalleryBtn));
+
+  document.getElementById('saveStudentEditBtn').addEventListener('click', async () => {
+    if (!selectedStudentId) return;
+    const name = document.getElementById('editStudentName').value.trim();
+    const stage = document.getElementById('editStudentStage').value;
+    const btn = document.getElementById('saveStudentEditBtn');
+    const errEl = document.getElementById('editStudentError');
+    errEl.textContent = '';
+
+    if (!name || !stage) { errEl.textContent = 'الاسم والمرحلة مطلوبان'; return; }
+
+    btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+    try {
+      let imageUrl = '';
+      if (editStudentImageBase64) {
+        imageUrl = await uploadToCloudinary(editStudentImageBase64, 'student-photos', 'image/jpeg');
+      }
+
+      const result = await callAppsScript({
+        action: 'updateStudentInfo', id: selectedStudentId, name: name, stage: stage, imageUrl: imageUrl
+      });
+      if (!result.success) { errEl.textContent = result.error || 'تعذر حفظ التعديلات'; return; }
+
+      document.getElementById('detailName').textContent = name;
+      document.getElementById('detailStage').textContent = stage;
+      const avatar = document.getElementById('detailAvatar');
+      const finalImageUrl = imageUrl || (allLoadedStudents.find((s) => s.id === selectedStudentId) || {}).imageUrl;
+      if (finalImageUrl) { avatar.style.backgroundImage = "url('" + finalImageUrl + "')"; avatar.textContent = ''; }
+
+      [allLoadedStudents, allStudentsCache].forEach((list) => {
+        if (!list) return;
+        const idx = list.findIndex((s) => s.id === selectedStudentId);
+        if (idx !== -1) {
+          list[idx].name = name;
+          list[idx].stage = stage;
+          if (imageUrl) list[idx].imageUrl = imageUrl;
+        }
+      });
+
+      document.getElementById('editStudentForm').classList.add('hidden');
+    } catch (err) {
+      errEl.textContent = 'حدث خطأ في الاتصال';
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 حفظ التعديلات';
+    }
+  });
+
+  // ===== تسجيل حضور يدوي (نفس قواعد محطة الحضور: صباحي/مسائي وحدود الوقت) =====
+  document.getElementById('manualAttendanceBtn').addEventListener('click', async () => {
+    if (!selectedStudentId) return;
+    const btn = document.getElementById('manualAttendanceBtn');
+    const msgEl = document.getElementById('attendanceMsg');
+    btn.disabled = true; btn.textContent = 'جاري التسجيل...'; msgEl.textContent = ''; msgEl.style.color = 'var(--success)';
+
+    try {
+      const data = await callAppsScript({ action: 'markAttendance', rawScan: selectedStudentId, supervisorName: currentSupervisorName, source: 'supervisor' });
+      if (data.success) {
+        msgEl.style.color = 'var(--success)';
+        msgEl.textContent = 'تم تسجيل حضور البرنامج ال' + data.session + (data.tier === 'مبكر' ? ' (مبكر ⭐)' : ' (عادي)') + ' — +' + data.pointsAdded + ' دينار';
+        document.getElementById('detailBalance').textContent = data.student.balance + ' نقطة';
+        const idx = allLoadedStudents.findIndex((s) => s.id === selectedStudentId);
+        if (idx !== -1) allLoadedStudents[idx].balance = data.student.balance;
+        if (allStudentsCache) {
+          const masterIdx = allStudentsCache.findIndex((s) => s.id === selectedStudentId);
+          if (masterIdx !== -1) allStudentsCache[masterIdx].balance = data.student.balance;
+        }
+        loadPointsLog(selectedStudentId, true);
+      } else {
+        msgEl.style.color = 'var(--error)';
+        msgEl.textContent = data.error || 'تعذر تسجيل الحضور';
+      }
+    } catch (_) {
+      msgEl.style.color = 'var(--error)';
+      msgEl.textContent = 'حدث خطأ في الاتصال';
+    } finally {
+      btn.disabled = false; btn.textContent = '✅ تسجيل حضور الآن';
+      clearTimeout(window.__attendanceMsgTimer);
+      window.__attendanceMsgTimer = setTimeout(() => { msgEl.textContent = ''; }, 3500);
+    }
+  });
+
+  function updatePendingDisplay() {
+    const box = document.getElementById('pendingAmountBox');
+    const text = document.getElementById('pendingAmountText');
+    const confirmBtn = document.getElementById('confirmAdjustBtn');
+    if (pendingAmount === null) {
+      box.classList.add('hidden');
+      confirmBtn.disabled = true;
+    } else {
+      box.classList.remove('hidden');
+      text.textContent = (pendingAmount > 0 ? '+' : '') + pendingAmount;
+      text.style.color = pendingAmount > 0 ? 'var(--success)' : 'var(--error)';
+      confirmBtn.disabled = false;
+    }
+  }
+
+  document.querySelectorAll('#balanceDetailView .amount-chip[data-amount]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      pendingAmount = Number(btn.dataset.amount);
+      document.getElementById('customAmountInput').classList.add('hidden');
+      updatePendingDisplay();
+    });
+  });
+  const customAmountInput = document.getElementById('customAmountInput');
+  let customSign = 1;
+
+  function openCustomAmountInput(sign) {
+    customSign = sign;
+    customAmountInput.classList.remove('hidden');
+    customAmountInput.value = '';
+    customAmountInput.focus();
+    pendingAmount = null;
+    updatePendingDisplay();
+  }
+
+  document.getElementById('customPlusBtn').addEventListener('click', () => openCustomAmountInput(1));
+  document.getElementById('customMinusBtn').addEventListener('click', () => openCustomAmountInput(-1));
+
+  customAmountInput.addEventListener('input', () => {
+    customAmountInput.value = customAmountInput.value.replace(/[^0-9]/g, ''); // أرقام فقط
+    const num = Number(customAmountInput.value);
+    pendingAmount = (customAmountInput.value === '' || isNaN(num) || num <= 0) ? null : customSign * num;
+    updatePendingDisplay();
+  });
+
+  document.getElementById('clearPendingBtn').addEventListener('click', () => {
+    pendingAmount = null; updatePendingDisplay();
+    customAmountInput.classList.add('hidden');
+  });
+
+  document.getElementById('confirmAdjustBtn').addEventListener('click', async () => {
+    if (pendingAmount === null || !selectedStudentId) return;
+    const btn = document.getElementById('confirmAdjustBtn');
+    const errEl = document.getElementById('adjustError');
+    btn.disabled = true; btn.textContent = 'جاري التأكيد...'; errEl.textContent = '';
+    try {
+      const result = await callAppsScript({ action: 'adjustPoints', id: selectedStudentId, amount: pendingAmount, supervisorName: currentSupervisorName });
+      if (!result.success) { errEl.textContent = result.error || 'تعذر التعديل'; return; }
+
+      document.getElementById('detailBalance').textContent = result.newBalance + ' نقطة';
+      const idx = allLoadedStudents.findIndex((s) => s.id === selectedStudentId);
+      if (idx !== -1) allLoadedStudents[idx].balance = result.newBalance;
+      if (allStudentsCache) {
+        const masterIdx = allStudentsCache.findIndex((s) => s.id === selectedStudentId);
+        if (masterIdx !== -1) allStudentsCache[masterIdx].balance = result.newBalance;
+      }
+
+      pendingAmount = null;
+      updatePendingDisplay();
+      loadPointsLog(selectedStudentId, true);
+    } catch (_) {
+      errEl.textContent = 'حدث خطأ في الاتصال';
+    } finally {
+      btn.disabled = false; btn.textContent = '✅ تأكيد';
+    }
+  });
+
+  // ذاكرة مؤقتة لسجل عمليات كل طالب (نفس فكرة allStudentsCache) — تفتح سجل
+  // طالب شُوهد قبل فورًا من الذاكرة بدون انتظار، وتتحدث فقط بعد تعديل جديد
+  // فعلي على رصيده (forceRefresh=true)، وإلا تبقى صالحة بدون أي طلب إضافي.
+  let pointsLogCache = {};
+
+  function renderPointsLog(log) {
+    const wrap = document.getElementById('pointsLogList');
+    if (!log || !log.length) { wrap.innerHTML = '<p class="list-empty">لا توجد عمليات مسجلة بعد</p>'; return; }
+    wrap.innerHTML = log.map((entry) => `
+      <div class="log-row">
+        <div>
+          <div style="font-weight:700;color:var(--indigo);font-size:.84rem;">${entry.reason || ''}</div>
+          <div class="log-date">${entry.date}</div>
+        </div>
+        <span class="log-amount" style="color:${entry.amount > 0 ? 'var(--success)' : 'var(--error)'}">${entry.amount > 0 ? '+' : ''}${entry.amount}</span>
+      </div>
+    `).join('');
+  }
+
+  async function loadPointsLog(id, forceRefresh) {
+    const wrap = document.getElementById('pointsLogList');
+
+    if (!forceRefresh && pointsLogCache[id]) {
+      renderPointsLog(pointsLogCache[id]);
+      return;
+    }
+
+    wrap.innerHTML = '<p class="list-empty">جاري التحميل...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getPointsLog', id: id });
+      const log = data.success ? data.log : [];
+      pointsLogCache[id] = log;
+      renderPointsLog(log);
+    } catch (_) {
+      wrap.innerHTML = '<p class="list-empty">تعذر تحميل السجل</p>';
+    }
+  }
+
+  // ===== تعديل جماعي =====
+  function updateBulkBar() {
+    const bar = document.getElementById('bulkActionBar');
+    const count = selectedBulkIds.size;
+    if (count === 0) {
+      bar.classList.add('hidden');
+      document.getElementById('balanceListView').classList.remove('bulk-bar-open');
+      bulkPendingAmount = null;
+      updateBulkPendingDisplay();
+      document.getElementById('bulkCustomAmountInput').classList.add('hidden');
+      return;
+    }
+    bar.classList.remove('hidden');
+    document.getElementById('balanceListView').classList.add('bulk-bar-open');
+    document.getElementById('bulkSelectedCount').textContent = count + ' طالب محدد';
+  }
+
+  document.querySelectorAll('#bulkActionBar .amount-chip[data-bulk-amount]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      bulkPendingAmount = Number(btn.dataset.bulkAmount);
+      document.getElementById('bulkCustomAmountInput').classList.add('hidden');
+      updateBulkPendingDisplay();
+    });
+  });
+
+  const bulkCustomAmountInput = document.getElementById('bulkCustomAmountInput');
+  let bulkCustomSign = 1;
+
+  function openBulkCustomAmountInput(sign) {
+    bulkCustomSign = sign;
+    bulkCustomAmountInput.classList.remove('hidden');
+    bulkCustomAmountInput.value = '';
+    bulkCustomAmountInput.focus();
+    bulkPendingAmount = null;
+    updateBulkPendingDisplay();
+  }
+
+  document.getElementById('bulkCustomPlusBtn').addEventListener('click', () => openBulkCustomAmountInput(1));
+  document.getElementById('bulkCustomMinusBtn').addEventListener('click', () => openBulkCustomAmountInput(-1));
+
+  bulkCustomAmountInput.addEventListener('input', () => {
+    bulkCustomAmountInput.value = bulkCustomAmountInput.value.replace(/[^0-9]/g, '');
+    const num = Number(bulkCustomAmountInput.value);
+    bulkPendingAmount = (bulkCustomAmountInput.value === '' || isNaN(num) || num <= 0) ? null : bulkCustomSign * num;
+    updateBulkPendingDisplay();
+  });
+
+  function updateBulkPendingDisplay() {
+    const box = document.getElementById('bulkPendingAmountBox');
+    const text = document.getElementById('bulkPendingAmountText');
+    const confirmBtn = document.getElementById('bulkConfirmBtn');
+    if (bulkPendingAmount === null) {
+      box.classList.add('hidden');
+      confirmBtn.disabled = true;
+    } else {
+      box.classList.remove('hidden');
+      text.textContent = 'المبلغ: ' + (bulkPendingAmount > 0 ? '+' : '') + bulkPendingAmount;
+      text.style.color = bulkPendingAmount > 0 ? 'var(--success)' : 'var(--error)';
+      confirmBtn.disabled = false;
+    }
+  }
+
+  document.getElementById('bulkAttendanceBtn').addEventListener('click', async () => {
+    if (!selectedBulkIds.size) return;
+    const btn = document.getElementById('bulkAttendanceBtn');
+    btn.disabled = true; btn.textContent = 'جاري التحضير...';
+    let resultMsg;
+    try {
+      const ids = Array.from(selectedBulkIds);
+      const result = await callAppsScript({ action: 'bulkMarkAttendance', ids: ids, supervisorName: currentSupervisorName, source: 'supervisor' });
+      if (!result.success) {
+        resultMsg = result.error || 'تعذر تسجيل الحضور';
+      } else {
+        const successN = result.results.filter((r) => r.success).length;
+        const alreadyN = result.results.filter((r) => r.alreadyMarked).length;
+
+        if (allStudentsCache) {
+          result.results.forEach((r) => {
+            if (r.success) {
+              const idx = allStudentsCache.findIndex((s) => s.id === r.id);
+              if (idx !== -1) allStudentsCache[idx].balance = r.newBalance;
+            }
+          });
+        }
+
+        selectedBulkIds.clear();
+        filterAndRenderBalanceStudents();
+
+        resultMsg = '✅ تم تحضير ' + successN + (alreadyN ? ('، مسجل من قبل ' + alreadyN) : '');
+      }
+    } catch (_) {
+      resultMsg = 'فشل الاتصال، حاول مرة أخرى';
+    }
+
+    btn.textContent = resultMsg;
+    setTimeout(() => {
+      btn.disabled = false; btn.textContent = '📋 تحضير';
+      updateBulkBar(); // يخفي الشريط تلقائيًا الآن بعد ما خلصت التحديد (لو فاضي)
+    }, 2500);
+  });
+
+  document.getElementById('bulkConfirmBtn').addEventListener('click', async () => {
+    if (bulkPendingAmount === null || !selectedBulkIds.size) return;
+    const btn = document.getElementById('bulkConfirmBtn');
+    btn.disabled = true; btn.textContent = 'جاري التطبيق...';
+    let failMsg = null;
+    try {
+      const ids = Array.from(selectedBulkIds);
+      const result = await callAppsScript({ action: 'bulkAdjustPoints', ids: ids, amount: bulkPendingAmount, supervisorName: currentSupervisorName });
+      if (!result.success) {
+        failMsg = 'فشل، حاول مرة أخرى';
+      } else {
+        if (allStudentsCache) {
+          (result.results || []).forEach((r) => {
+            if (r.success) {
+              const idx = allStudentsCache.findIndex((s) => s.id === r.id);
+              if (idx !== -1) allStudentsCache[idx].balance = r.newBalance;
+            }
+          });
+        }
+        selectedBulkIds.clear();
+        bulkPendingAmount = null;
+        updateBulkBar();
+        updateBulkPendingDisplay();
+        filterAndRenderBalanceStudents();
+      }
+    } catch (_) {
+      failMsg = 'فشل الاتصال، حاول مرة أخرى';
+    }
+
+    if (failMsg) {
+      btn.textContent = failMsg;
+      setTimeout(() => { btn.disabled = false; btn.textContent = '✅ تأكيد للكل المحددين'; }, 2200);
+    } else {
+      btn.disabled = false; btn.textContent = '✅ تأكيد للكل المحددين';
+    }
+  });
+
+  /* ==================== إدارة المجموعات والترتيب ==================== */
+  let groupsAdminCache = [];
+  let editingGroup = null;
+  let groupEditorMode = 'add';
+
+  async function ensureStudentsCache() {
+    if (allStudentsCache && allStudentsCache.length) return;
+    const data = await callAppsScript({ action: 'getStudentsByStage', stage: '' });
+    allStudentsCache = data.success ? data.students : [];
+  }
+
+  let groupSelectedIds = new Set();
+
+  function categoryMatches(stage, category) {
+    if (category === 'رابع+خامس+سادس') return ['رابع ابتدائي','خامس ابتدائي','سادس ابتدائي'].includes(stage);
+    if (category === 'متوسط') return stage.includes('متوسط');
+    return stage.includes('ثانوي');
+  }
+
+  function renderGroupStudentsPicker(selectedIds) {
+    const wrap = document.getElementById('groupStudentsPicker');
+    if (selectedIds) groupSelectedIds = new Set(selectedIds.map(String));
+    const query = document.getElementById('groupStudentSearchInput').value.trim().toLowerCase();
+    const category = editingGroup ? editingGroup.stage : document.getElementById('groupStageSelect').value;
+    let students = (allStudentsCache || []).filter((s) => categoryMatches(String(s.stage), category));
+    if (groupEditorMode === 'members') students = students.filter((s) => editingGroup.members.some((m) => String(m.id) === String(s.id)));
+    students = students.filter((s) => !query || String(s.name).toLowerCase().includes(query)).sort((a,b) => a.name.localeCompare(b.name, 'ar'));
+    if (!students.length) { wrap.innerHTML = '<p class="list-empty">لا توجد نتائج مطابقة</p>'; return; }
+    const byStage = {};
+    students.forEach((s) => { (byStage[s.stage] ||= []).push(s); });
+    wrap.innerHTML = Object.keys(byStage).map((stage) => `<div style="margin-bottom:14px;">
+      <div class="section-sub" style="font-weight:800;color:var(--violet);margin:8px 0;">${stage}</div>
+      ${byStage[stage].map((s) => `<label class="list-item" style="cursor:pointer;">
+        <input type="checkbox" class="group-student-checkbox" value="${s.id}" ${groupSelectedIds.has(String(s.id)) ? 'checked' : ''} style="width:22px;margin:0;">
+        <span style="flex:1;font-weight:700;">${s.name}</span><small>${s.stage}</small>
+      </label>`).join('')}
+    </div>`).join('');
+  }
+
+  async function loadGroupsAdmin() {
+    await ensureStudentsCache();
+    const data = await callAppsScript({ action: 'getGroups', stage: document.getElementById('groupStageSelect').value });
+    groupsAdminCache = data.success ? data.groups : [];
+    const wrap = document.getElementById('groupsList');
+    if (!groupsAdminCache.length) { wrap.innerHTML = '<p class="list-empty">لا توجد مجموعات حتى الآن</p>'; return; }
+    wrap.innerHTML = groupsAdminCache.map((g) => `<details class="group-admin-card">
+      <summary><div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div><span class="group-chevron">⌄</span></summary>
+      <div class="group-actions-expanded"><button type="button" class="btn-secondary group-action-btn" data-add-group="${g.id}">➕ إضافة طلاب</button><button type="button" class="btn-secondary group-action-btn" data-edit-group="${g.id}">✏️ تعديل الطلاب</button><button type="button" class="icon-btn danger" data-delete-group="${g.id}" aria-label="حذف المجموعة">🗑️</button></div>
+    </details>`).join('');
+  }
+
+  document.getElementById('groupStudentSearchInput').addEventListener('input', () => renderGroupStudentsPicker());
+  document.getElementById('groupStudentsPicker').addEventListener('change', (e) => {
+    if (!e.target.classList.contains('group-student-checkbox')) return;
+    if (e.target.checked) groupSelectedIds.add(String(e.target.value));
+    else groupSelectedIds.delete(String(e.target.value));
+  });
+
+  document.getElementById('groupsList').addEventListener('click', async (e) => {
+    const addBtn = e.target.closest('[data-add-group]');
+    const editBtn = e.target.closest('[data-edit-group]');
+    const deleteBtn = e.target.closest('[data-delete-group]');
+    if (addBtn || editBtn) {
+      const id = addBtn ? addBtn.dataset.addGroup : editBtn.dataset.editGroup;
+      const group = groupsAdminCache.find((g) => g.id === id);
+      if (!group) return;
+      editingGroup = group;
+      groupEditorMode = addBtn ? 'add' : 'members';
+      document.getElementById('groupStudentSearchInput').value = '';
+      document.getElementById('groupEditorTitle').textContent = (addBtn ? 'إضافة طلاب إلى ' : 'تعديل طلاب ') + group.name;
+      document.getElementById('groupMembersEditor').classList.remove('hidden');
+      renderGroupStudentsPicker(group.members.map((m) => m.id));
+      document.getElementById('groupMembersEditor').scrollIntoView({behavior:'smooth'});
+    }
+    if (deleteBtn && confirm('هل تريد حذف هذه المجموعة؟')) {
+      await callAppsScript({ action: 'deleteGroup', groupId: deleteBtn.dataset.deleteGroup });
+      await loadGroupsAdmin();
+    }
+  });
+
+  document.getElementById('cancelGroupEditBtn').addEventListener('click', () => document.getElementById('groupMembersEditor').classList.add('hidden'));
+  document.getElementById('groupModeSelect').addEventListener('change', (e) => {
+    document.getElementById('groupCreatePanel').classList.toggle('hidden', e.target.value !== 'create');
+    document.getElementById('groupEditPanel').classList.toggle('hidden', e.target.value !== 'edit');
+  });
+  document.getElementById('loadStageGroupsBtn').addEventListener('click', loadGroupsAdmin);
+
+  document.getElementById('createGroupBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('createGroupBtn');
+    const msg = document.getElementById('groupFormMsg');
+    const payload = {
+      action: 'saveGroup',
+      name: document.getElementById('groupNameInput').value.trim(),
+      stage: document.getElementById('groupStageSelect').value,
+      studentIds: []
+    };
+    btn.disabled = true; msg.textContent = '';
+    try {
+      const result = await callAppsScript(payload);
+      msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
+      msg.textContent = result.success ? '✅ تم حفظ المجموعة' : (result.error || 'تعذر الحفظ');
+      if (result.success) { document.getElementById('groupNameInput').value=''; msg.textContent='✅ تم إنشاء المجموعة، اختر التعديل لإضافة الطلاب'; }
+    } finally { btn.disabled = false; }
+  });
+
+  document.getElementById('saveGroupMembersBtn').addEventListener('click', async () => {
+    if (!editingGroup) return;
+    const original = new Set(editingGroup.members.map(m => String(m.id)));
+    const selected = Array.from(groupSelectedIds);
+    const removed = editingGroup.members.filter(m => !groupSelectedIds.has(String(m.id)));
+    const moved = selected.map(id => ({id, old: groupsAdminCache.find(g => g.id !== editingGroup.id && g.members.some(m => String(m.id) === id))})).filter(x => x.old);
+    let warning = '';
+    if (removed.length) warning += `سيتم إخراج: ${removed.map(x=>x.name).join('، ')}. `;
+    if (moved.length) warning += moved.map(x => `${(allStudentsCache.find(s=>String(s.id)===x.id)||{}).name} سيخرج من ${x.old.name} وستتأثر نقاط مجموعته`).join('\n');
+    if (warning && !confirm(warning + '\nهل تريد المتابعة؟')) return;
+    const result = await callAppsScript({action:'saveGroup', groupId:editingGroup.id, name:editingGroup.name, stage:editingGroup.stage, studentIds:selected});
+    if (result.success) { document.getElementById('groupMembersEditor').classList.add('hidden'); await loadGroupsAdmin(); }
+  });
+
+  async function loadRankingGroupOptions() {
+    const stage = document.getElementById('rankingStageSelect').value;
+    const data = await callAppsScript({ action: 'getGroups', stage: stage });
+    document.getElementById('rankingGroupChecks').innerHTML = `<label style="display:flex;gap:8px"><input type="checkbox" id="rankingAllGroups" checked style="width:22px;margin:0">كل المجموعات</label>` + (data.groups || []).map(g => `<label style="display:flex;gap:8px"><input class="ranking-group-check" type="checkbox" value="${g.id}" style="width:22px;margin:0">${g.name}</label>`).join('');
+  }
+  document.getElementById('rankingStageSelect').addEventListener('change', loadRankingGroupOptions);
+  document.getElementById('rankingModeSelect').addEventListener('change', e => document.getElementById('rankingGroupsLabel').classList.toggle('hidden', e.target.value === 'individuals'));
+
+  document.getElementById('showRankingBtn').addEventListener('click', async () => {
+    const wrap = document.getElementById('rankingColumns');
+    wrap.innerHTML = '<div class="card"><p class="list-empty">جاري تحميل الترتيب...</p></div>';
+    const allBox = document.getElementById('rankingAllGroups');
+    const groupIds = allBox && !allBox.checked ? Array.from(document.querySelectorAll('.ranking-group-check:checked')).map(x=>x.value) : [];
+    const data = await callAppsScript({ action: 'getAdvancedRanking', category: document.getElementById('rankingStageSelect').value, mode: document.getElementById('rankingModeSelect').value, groupIds, details: document.getElementById('rankingDetailsCheck').checked });
+    const columns = data.columns || [];
+    if (!data.success || !columns.length) { wrap.innerHTML = '<div class="card"><p class="list-empty">لا توجد نتائج مطابقة</p></div>'; return; }
+    wrap.innerHTML = columns.map((g, groupIndex) => `<div class="ranking-column card">
+      <div class="section-title">${groupIndex + 1}. ${g.name}</div>
+      <div class="ranking-total">مجموع المجموعة: ${g.totalPoints}</div>
+      ${(g.members || []).map((s, i) => `<div class="list-item" style="padding:10px 0;align-items:flex-start"><b style="width:26px;">${i + 1}</b><span style="flex:1;">${s.name}<small style="display:block">${((s.details||{}).items||[]).map(x=>`${x.count} ${x.label}`).join('، ')}</small>${((s.details||{}).edits||[]).map(x=>`<small style="display:block;color:var(--pink)">${x}</small>`).join('')}</span><strong>${s.balance}</strong></div>`).join('')}
+    </div>`).join('');
+  });
+  loadRankingGroupOptions();
+
+  /* ==================== إدارة بنود النقاط ==================== */
+  let achievementItemsAdminCache = [];
+
+  function resetAchievementItemForm() {
+    document.getElementById('achievementItemKey').value = '';
+    document.getElementById('achievementItemLabel').value = '';
+    document.getElementById('achievementItemPoints').value = '';
+    document.getElementById('achievementItemMaxChecks').value = '1';
+    document.getElementById('achievementItemType').value = 'weekly';
+    document.getElementById('achievementItemMaxChecks').disabled = false;
+    document.getElementById('cancelAchievementItemEditBtn').classList.add('hidden');
+    document.getElementById('achievementItemForm').classList.add('hidden');
+  }
+
+  async function loadAchievementItemsAdmin() {
+    const wrap = document.getElementById('achievementItemsList');
+    wrap.innerHTML = '<p class="list-empty">جاري تحميل البنود...</p>';
+    const data = await callAppsScript({ action: 'getAchievementItems', includeInactive: true });
+    achievementItemsAdminCache = data.success ? (data.items || []) : [];
+    if (!achievementItemsAdminCache.length) {
+      wrap.innerHTML = '<p class="list-empty">لا توجد بنود حتى الآن</p>';
+      return;
+    }
+    wrap.innerHTML = achievementItemsAdminCache.map((item) => `<div class="list-item" style="opacity:${item.active ? 1 : .58}">
+      <div style="flex:1;"><div class="list-item-title">${item.label}</div><div class="list-item-sub">أسبوعي — ${item.points} نقطة للدائرة — ${item.maxChecks} ${item.maxChecks === 1 ? 'دائرة' : 'دوائر'}</div></div>
+      <div class="list-item-actions">
+        <button type="button" class="icon-btn" data-edit-achievement="${item.key}" aria-label="تعديل">✏️</button>
+        <button type="button" class="icon-btn" data-toggle-achievement="${item.key}" data-active="${!item.active}" aria-label="${item.active ? 'تعطيل' : 'تفعيل'}">${item.active ? '⏸️' : '▶️'}</button>
+      </div>
+    </div>`).join('');
+  }
+
+  document.getElementById('achievementItemType').addEventListener('change', (e) => {
+    document.getElementById('achievementItemMaxChecks').disabled = false;
+  });
+
+  document.getElementById('achievementItemsList').addEventListener('click', async (e) => {
+    const editBtn = e.target.closest('[data-edit-achievement]');
+    const toggleBtn = e.target.closest('[data-toggle-achievement]');
+    if (editBtn) {
+      const item = achievementItemsAdminCache.find((x) => x.key === editBtn.dataset.editAchievement);
+      if (!item) return;
+      document.getElementById('achievementItemKey').value = item.key;
+      document.getElementById('achievementItemLabel').value = item.label;
+      document.getElementById('achievementItemPoints').value = item.points;
+      document.getElementById('achievementItemMaxChecks').value = item.maxChecks;
+      document.getElementById('achievementItemType').value = item.type;
+      document.getElementById('achievementItemMaxChecks').disabled = false;
+      document.getElementById('cancelAchievementItemEditBtn').classList.remove('hidden');
+      document.getElementById('achievementItemForm').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (toggleBtn) {
+      toggleBtn.disabled = true;
+      await callAppsScript({ action: 'toggleAchievementItem', key: toggleBtn.dataset.toggleAchievement, active: toggleBtn.dataset.active === 'true' });
+      await loadAchievementItemsAdmin();
+    }
+  });
+
+  document.getElementById('cancelAchievementItemEditBtn').addEventListener('click', resetAchievementItemForm);
+  document.getElementById('showAchievementItemFormBtn').addEventListener('click', () => {
+    resetAchievementItemForm();
+    document.getElementById('achievementItemForm').classList.remove('hidden');
+  });
+  document.getElementById('saveAchievementItemBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveAchievementItemBtn');
+    const msg = document.getElementById('achievementItemMsg');
+    const type = document.getElementById('achievementItemType').value;
+    const current = achievementItemsAdminCache.find((x) => x.key === document.getElementById('achievementItemKey').value);
+    const labelValue = document.getElementById('achievementItemLabel').value.trim();
+    const pointsValue = document.getElementById('achievementItemPoints').value;
+    if (!labelValue || pointsValue === '' || Number(pointsValue) < 0) {
+      msg.style.color = 'var(--error)';
+      msg.textContent = !labelValue ? 'اسم البند مطلوب' : 'أدخل عدد نقاط صحيح';
+      return;
+    }
+    const item = {
+      key: document.getElementById('achievementItemKey').value,
+      label: labelValue,
+      points: Number(pointsValue),
+      maxChecks: Number(document.getElementById('achievementItemMaxChecks').value),
+      type: 'weekly',
+      active: current ? current.active : true,
+      order: current ? current.order : achievementItemsAdminCache.length + 1
+    };
+    btn.disabled = true; msg.textContent = '';
+    try {
+      const result = await callAppsScript({ action: 'saveAchievementItem', item: item });
+      msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
+      msg.textContent = result.success ? '✅ تم حفظ البند' : (result.error || 'تعذر حفظ البند');
+      if (result.success) { resetAchievementItemForm(); await loadAchievementItemsAdmin(); }
+    } finally { btn.disabled = false; }
+  });
+
+  // ترتيب صفحة الإعلانات: النصيحة الحالية، ثم الإعلانات الحالية، ثم الإضافة.
+  (() => {
+    const addCard = document.getElementById('contentForm')?.closest('.card');
+    const announcementsCard = document.getElementById('announcementsList')?.closest('.card');
+    if (addCard && announcementsCard) addCard.parentElement.insertBefore(announcementsCard, addCard);
+  })();
+</script>
+</body>
+</html>
