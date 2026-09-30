@@ -174,9 +174,13 @@ async function getDayContext(body:any) {
   let groupActivity:any[]=[];
   if(gm){
     const members=await rows(`/group_memberships?group_id=eq.${gm.group_id}&left_at=is.null&select=student_id,students(full_name)`);
-    for(const m of members){
-      const a=await rows(`/point_awards?student_id=eq.${m.student_id}&activity_date=eq.${wi.date}&select=quantity,point_items(name)`);
-      if(a.length)groupActivity.push({name:m.students?.full_name||'',items:a.map((z:any)=>({count:z.quantity,label:z.point_items?.name||''})),score:a.reduce((n:number,z:any)=>n+Number(z.quantity||0),0)});
+    const memberIds=members.map((m:any)=>Number(m.student_id)).filter(Boolean);
+    if(memberIds.length){
+      const allAwards=await rows(`/point_awards?student_id=in.(${memberIds.join(',')})&activity_date=eq.${wi.date}&select=student_id,quantity,point_items(name)`);
+      for(const m of members){
+        const a=allAwards.filter((z:any)=>Number(z.student_id)===Number(m.student_id));
+        if(a.length)groupActivity.push({name:m.students?.full_name||'',items:a.map((z:any)=>({count:z.quantity,label:z.point_items?.name||''})),score:a.reduce((n:number,z:any)=>n+Number(z.quantity||0),0)});
+      }
     }
     groupActivity.sort((a,b)=>b.score-a.score);
   }
