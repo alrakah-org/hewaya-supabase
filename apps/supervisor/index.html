@@ -2536,15 +2536,29 @@
   }
 
   async function loadGroupsAdmin() {
-    await ensureStudentsCache();
-    const data = await callAppsScript({ action: 'getGroups', stage: document.getElementById('groupStageSelect').value });
-    groupsAdminCache = data.success ? data.groups : [];
     const wrap = document.getElementById('groupsList');
-    if (!groupsAdminCache.length) { wrap.innerHTML = '<p class="list-empty">لا توجد مجموعات حتى الآن</p>'; return; }
-    wrap.innerHTML = groupsAdminCache.map((g) => `<details class="group-admin-card">
-      <summary><div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div><span class="group-chevron">⌄</span></summary>
-      <div class="group-actions-expanded"><button type="button" class="btn-secondary group-action-btn" data-add-group="${g.id}">➕ إضافة طلاب</button><button type="button" class="btn-secondary group-action-btn" data-edit-group="${g.id}">✏️ تعديل الطلاب</button><button type="button" class="icon-btn danger" data-delete-group="${g.id}" aria-label="حذف المجموعة">🗑️</button></div>
-    </details>`).join('');
+    const btn = document.getElementById('loadStageGroupsBtn');
+    const msg = document.getElementById('groupFormMsg');
+    wrap.innerHTML = '<p class="list-empty">جاري تحميل المجموعات...</p>';
+    msg.textContent = '';
+    if (btn) { btn.disabled = true; btn.textContent = 'جاري التحميل...'; }
+    try {
+      const data = await callAppsScript({ action: 'getGroups', stage: document.getElementById('groupStageSelect').value });
+      if (!data.success) throw new Error(data.error || 'تعذر تحميل المجموعات');
+      groupsAdminCache = Array.isArray(data.groups) ? data.groups : [];
+      if (!groupsAdminCache.length) { wrap.innerHTML = '<p class="list-empty">لا توجد مجموعات في هذه المرحلة حتى الآن</p>'; return; }
+      wrap.innerHTML = groupsAdminCache.map((g) => `<details class="group-admin-card">
+        <summary><div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div><span class="group-chevron">⌄</span></summary>
+        <div class="group-actions-expanded"><button type="button" class="btn-secondary group-action-btn" data-add-group="${g.id}">➕ إضافة طلاب</button><button type="button" class="btn-secondary group-action-btn" data-edit-group="${g.id}">✏️ تعديل الطلاب</button><button type="button" class="icon-btn danger" data-delete-group="${g.id}" aria-label="حذف المجموعة">🗑️</button></div>
+      </details>`).join('');
+    } catch (err) {
+      groupsAdminCache = [];
+      wrap.innerHTML = '<p class="list-empty">تعذر تحميل المجموعات</p>';
+      msg.style.color = 'var(--error)';
+      msg.textContent = err && err.message ? err.message : 'تعذر الاتصال، حاول مرة أخرى';
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'تأكيد وعرض المجموعات'; }
+    }
   }
 
   document.getElementById('groupStudentSearchInput').addEventListener('input', () => renderGroupStudentsPicker());
@@ -2562,6 +2576,11 @@
       const id = addBtn ? addBtn.dataset.addGroup : editBtn.dataset.editGroup;
       const group = groupsAdminCache.find((g) => g.id === id);
       if (!group) return;
+      const msg = document.getElementById('groupFormMsg');
+      msg.textContent = 'جاري تحميل قائمة الطلاب...';
+      try { await ensureStudentsCache(); }
+      catch (err) { msg.style.color='var(--error)'; msg.textContent='تعذر تحميل قائمة الطلاب'; return; }
+      msg.textContent = '';
       editingGroup = group;
       groupEditorMode = addBtn ? 'add' : 'members';
       document.getElementById('groupStudentSearchInput').value = '';
