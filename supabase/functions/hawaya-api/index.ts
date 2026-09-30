@@ -99,14 +99,27 @@ async function requireSupervisor(req: Request) {
 
 async function rows(path: string) { return (await db(path, { headers:{ Prefer:'return=representation' } })) || []; }
 
-async function balance(studentId: number, week?: number | null) {
-  const wf = week ? `&week_number=eq.${week}` : '';
-  const [awards, attendance, tx] = await Promise.all([
-    rows(`/point_awards?student_id=eq.${studentId}${wf}&select=total_points`),
-    rows(`/attendance?student_id=eq.${studentId}&select=points${week ? `&attendance_date=gte.${weekInfo().sunday}&attendance_date=lte.${weekInfo().saturday}` : ''}`),
-    rows(`/point_transactions?student_id=eq.${studentId}${wf}&select=amount`),
+async function balances(studentIds: number[], week?: number | null) {
+  const ids=[...new Set(studentIds.map(Number).filter(Boolean))];
+  const result:Record<number,number>={};
+  ids.forEach((id)=>{ result[id]=0; });
+  if(!ids.length)return result;
+  const filter=`student_id=in.(${ids.join(',')})`;
+  const wf=week?`&week_number=eq.${week}`:'';
+  const wi=week?weekInfo():null;
+  const [awards,attendance,tx]=await Promise.all([
+    rows(`/point_awards?${filter}${wf}&select=student_id,total_points`),
+    rows(`/attendance?${filter}&select=student_id,points${wi?`&attendance_date=gte.${wi.sunday}&attendance_date=lte.${wi.saturday}`:''}`),
+    rows(`/point_transactions?${filter}${wf}&select=student_id,amount`)
   ]);
-  return awards.reduce((s:any,x:any)=>s+Number(x.total_points||0),0)+attendance.reduce((s:any,x:any)=>s+Number(x.points||0),0)+tx.reduce((s:any,x:any)=>s+Number(x.amount||0),0);
+  awards.forEach((x:any)=>{result[Number(x.student_id)]=(result[Number(x.student_id)]||0)+Number(x.total_points||0)});
+  attendance.forEach((x:any)=>{result[Number(x.student_id)]=(result[Number(x.student_id)]||0)+Number(x.points||0)});
+  tx.forEach((x:any)=>{result[Number(x.student_id)]=(result[Number(x.student_id)]||0)+Number(x.amount||0)});
+  return result;
+}
+
+async function balance(studentId: number, week?: number | null) {
+  return (await balances([studentId],week))[Number(studentId)]||0;
 }
 
 async function studentRecord(studentId: number) {
@@ -145,7 +158,8 @@ async function dailyTip() {
 async function studentsList(stage='') {
   const q=stage ? `&grade=eq.${encodeURIComponent(stage)}` : '';
   const data=await rows(`/students?active=eq.true${q}&order=full_name.asc&select=*`);
-  return Promise.all(data.map(async(x:any)=>({id:x.student_code,name:x.full_name,stage:x.grade,imageUrl:x.photo_url||'',balance:await balance(x.id),dbId:x.id})));
+  const totals=await balances(data.map((x:any)=>Number(x.id)));
+  return data.map((x:any)=>({id:x.student_code,name:x.full_name,stage:x.grade,imageUrl:x.photo_url||'',balance:totals[Number(x.id)]||0,dbId:x.id}));
 }
 
 async function registerStudent(body:any) {
@@ -223,14 +237,19 @@ async function markAttendance(body:any, source='student') {
 }
 
 async function groups(stage='') {
-  const cat=stageCategory(stage); const data=await rows(`/groups?active=eq.true${stage?`&stage_category=eq.${cat}`:''}&order=name.asc&select=*`);
-  const out=[];
-  for(const g of data){
-    const ms=await rows(`/group_memberships?group_id=eq.${g.id}&left_at=is.null&select=student_id,students(student_code,full_name,grade)`);
-    const members=[]; for(const m of ms) members.push({id:m.students?.student_code,name:m.students?.full_name,stage:m.students?.grade,balance:await balance(m.student_id)});
-    out.push({id:g.id,name:g.name,stage:categoryLabel(g.stage_category),members,totalPoints:members.reduce((n,x)=>n+x.balance,0)});
-  }
-  return out;
+  const cat=stageCategory(stage);
+  const data=await rows(`/groups?active=eq.true${stage?`&stage_category=eq.${cat}`:''}&order=name.asc&select=*`);
+  const allMemberships=await rows('/group_memberships?left_at=is.null&select=group_id,student_id,students(student_code,full_name,grade)');
+  const totals=await balances(allMemberships.map((m:any)=>Number(m.student_id)));
+  return data.map((g:any)=>{
+    const members=allMemberships.filter((m:any)=>m.group_id===g.id).map((m:any)=>({
+      id:m.students?.student_code,
+      name:m.students?.full_name||'',
+      stage:m.students?.grade||'',
+      balance:totals[Number(m.student_id)]||0
+    })).sort((a:any,b:any)=>b.balance-a.balance||String(a.name).localeCompare(String(b.name),'ar'));
+    return {id:g.id,name:g.name,stage:categoryLabel(g.stage_category),members,totalPoints:members.reduce((n:number,x:any)=>n+x.balance,0)};
+  });
 }
 
 async function pointsLog(body:any) {
