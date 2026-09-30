@@ -66,7 +66,7 @@ function weekInfo() {
   const now = riyadhParts();
   let sunday = addDays(now.date, -now.day);
   if (now.day === 0 && now.minutes < 900) sunday = addDays(sunday, -7);
-  const start = new Date('2026-08-30T12:00:00Z');
+  const start = new Date('2026-09-06T12:00:00Z');
   const current = new Date(`${sunday}T12:00:00Z`);
   const number = 2 + Math.max(0, Math.round((current.getTime()-start.getTime())/604800000));
   return { ...now, sunday, saturday:addDays(sunday,6), number, label:`الأسبوع ${['','الأول','الثاني','الثالث','الرابع','الخامس','السادس','السابع','الثامن','التاسع','العاشر'][number] || number}` };
