@@ -2678,7 +2678,7 @@
     wrap.innerHTML = weeks.map(w => `<button type="button" class="ranking-week-btn ${String(w.value) === String(selectedRankingWeek) ? 'active' : ''}" data-ranking-week="${w.value}">${w.label}</button>`).join('');
     if (!supported) {
       const notice = document.createElement('p');
-      notice.textContent = 'تعذر تحميل الأسابيع. تحقق من الاتصال ومن نشر أحدث كود Apps Script الداعم لفلتر الأسابيع.';
+      notice.textContent = 'تعذر تحميل الأسابيع من قاعدة البيانات. تحقق من الاتصال ثم أعد المحاولة.';
       notice.setAttribute('role', 'status');
       wrap.appendChild(notice);
     }
@@ -2697,10 +2697,16 @@
     wrap.innerHTML = '<div class="card"><p class="list-empty">جاري تحميل الترتيب...</p></div>';
     const allBox = document.getElementById('rankingAllGroups');
     const groupIds = allBox && !allBox.checked ? Array.from(document.querySelectorAll('.ranking-group-check:checked')).map(x=>x.value) : [];
-    const data = await callAppsScript({ action: 'getAdvancedRanking', category: document.getElementById('rankingStageSelect').value, mode: document.getElementById('rankingModeSelect').value, groupIds, details: document.getElementById('rankingDetailsCheck').checked, weekNumber: selectedRankingWeek });
+    let data;
+    try {
+      data = await callAppsScript({ action: 'getAdvancedRanking', category: document.getElementById('rankingStageSelect').value, mode: document.getElementById('rankingModeSelect').value, groupIds, details: document.getElementById('rankingDetailsCheck').checked, weekNumber: selectedRankingWeek });
+    } catch (_) {
+      wrap.innerHTML = '<div class="card"><p role="alert">تعذر تحميل الترتيب. تحقق من الاتصال ثم حاول مرة أخرى.</p></div>';
+      return;
+    }
     const columns = data.columns || [];
     if (selectedRankingWeek !== 'all' && String(data.weekNumber) !== String(selectedRankingWeek)) {
-      wrap.innerHTML = '<div class="card"><p role="alert">لم يؤكد الخادم تطبيق الأسبوع المحدد. حدّث نشر Apps Script قبل عرض ترتيب أسبوعي.</p></div>';
+      wrap.innerHTML = '<div class="card"><p role="alert">تعذر تطبيق فلتر الأسبوع المحدد. أعد تحميل التطبيق ثم حاول مرة أخرى.</p></div>';
       return;
     }
     if (!data.success || !columns.length) { wrap.innerHTML = '<div class="card"><p class="list-empty">لا توجد نتائج مطابقة</p></div>'; return; }
