@@ -2509,6 +2509,16 @@
 
   let groupSelectedIds = new Set();
 
+  function closeGroupEditor() {
+    editingGroup = null;
+    groupEditorMode = 'add';
+    groupSelectedIds.clear();
+    document.getElementById('groupMembersEditor').classList.add('hidden');
+    document.getElementById('groupEditorTitle').textContent = '';
+    document.getElementById('groupStudentSearchInput').value = '';
+    document.getElementById('groupStudentsPicker').innerHTML = '';
+  }
+
   function categoryMatches(stage, category) {
     if (category === 'رابع+خامس+سادس') return ['رابع ابتدائي','خامس ابتدائي','سادس ابتدائي'].includes(stage);
     if (category === 'متوسط') return stage.includes('متوسط');
@@ -2536,6 +2546,7 @@
   }
 
   async function loadGroupsAdmin() {
+    closeGroupEditor();
     const wrap = document.getElementById('groupsList');
     const btn = document.getElementById('loadStageGroupsBtn');
     const msg = document.getElementById('groupFormMsg');
@@ -2551,6 +2562,14 @@
         <summary><div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div><span class="group-chevron">⌄</span></summary>
         <div class="group-actions-expanded"><button type="button" class="btn-secondary group-action-btn" data-add-group="${g.id}">➕ إضافة طلاب</button><button type="button" class="btn-secondary group-action-btn" data-edit-group="${g.id}">✏️ تعديل الطلاب</button><button type="button" class="icon-btn danger" data-delete-group="${g.id}" aria-label="حذف المجموعة">🗑️</button></div>
       </details>`).join('');
+      wrap.querySelectorAll('.group-admin-card').forEach((card) => {
+        card.addEventListener('toggle', () => {
+          if (!card.open) return;
+          wrap.querySelectorAll('.group-admin-card').forEach((other) => {
+            if (other !== card) other.open = false;
+          });
+        });
+      });
     } catch (err) {
       groupsAdminCache = [];
       wrap.innerHTML = '<p class="list-empty">تعذر تحميل المجموعات</p>';
@@ -2595,10 +2614,18 @@
     }
   });
 
-  document.getElementById('cancelGroupEditBtn').addEventListener('click', () => document.getElementById('groupMembersEditor').classList.add('hidden'));
+  document.getElementById('cancelGroupEditBtn').addEventListener('click', closeGroupEditor);
   document.getElementById('groupModeSelect').addEventListener('change', (e) => {
-    document.getElementById('groupCreatePanel').classList.toggle('hidden', e.target.value !== 'create');
-    document.getElementById('groupEditPanel').classList.toggle('hidden', e.target.value !== 'edit');
+    const editing = e.target.value === 'edit';
+    document.getElementById('groupCreatePanel').classList.toggle('hidden', !editing ? false : true);
+    document.getElementById('groupEditPanel').classList.toggle('hidden', !editing);
+    closeGroupEditor();
+    if (editing) loadGroupsAdmin();
+    else document.getElementById('groupsList').innerHTML = '';
+  });
+  document.getElementById('groupStageSelect').addEventListener('change', () => {
+    closeGroupEditor();
+    if (document.getElementById('groupModeSelect').value === 'edit') loadGroupsAdmin();
   });
   document.getElementById('loadStageGroupsBtn').addEventListener('click', loadGroupsAdmin);
 
@@ -2631,7 +2658,7 @@
     if (moved.length) warning += moved.map(x => `${(allStudentsCache.find(s=>String(s.id)===x.id)||{}).name} سيخرج من ${x.old.name} وستتأثر نقاط مجموعته`).join('\n');
     if (warning && !confirm(warning + '\nهل تريد المتابعة؟')) return;
     const result = await callAppsScript({action:'saveGroup', groupId:editingGroup.id, name:editingGroup.name, stage:editingGroup.stage, studentIds:selected});
-    if (result.success) { document.getElementById('groupMembersEditor').classList.add('hidden'); await loadGroupsAdmin(); }
+    if (result.success) { closeGroupEditor(); await loadGroupsAdmin(); }
   });
 
   async function loadRankingGroupOptions() {
