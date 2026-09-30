@@ -72,6 +72,17 @@ function addDays(iso: string, amount: number) {
   const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate()+amount); return d.toISOString().slice(0,10);
 }
 
+function weekLabel(number: number) {
+  const names = ['','الأول','الثاني','الثالث','الرابع','الخامس','السادس','السابع','الثامن','التاسع','العاشر'];
+  return `الأسبوع ${names[number] || number}`;
+}
+
+function weekRange(number: number) {
+  const startSunday = '2026-09-06';
+  const sunday = addDays(startSunday, (number - 2) * 7);
+  return { sunday, saturday: addDays(sunday, 6) };
+}
+
 function weekInfo() {
   const now = riyadhParts();
   let sunday = addDays(now.date, -now.day);
@@ -79,7 +90,7 @@ function weekInfo() {
   const start = new Date('2026-09-06T12:00:00Z');
   const current = new Date(`${sunday}T12:00:00Z`);
   const number = 2 + Math.max(0, Math.round((current.getTime()-start.getTime())/604800000));
-  return { ...now, sunday, saturday:addDays(sunday,6), number, label:`الأسبوع ${['','الأول','الثاني','الثالث','الرابع','الخامس','السادس','السابع','الثامن','التاسع','العاشر'][number] || number}` };
+  return { ...now, sunday, saturday:addDays(sunday,6), number, label:weekLabel(number) };
 }
 
 async function verifyStudent(body: any) {
@@ -106,7 +117,7 @@ async function balances(studentIds: number[], week?: number | null) {
   if(!ids.length)return result;
   const filter=`student_id=in.(${ids.join(',')})`;
   const wf=week?`&week_number=eq.${week}`:'';
-  const wi=week?weekInfo():null;
+  const wi=week?weekRange(Number(week)):null;
   const [awards,attendance,tx]=await Promise.all([
     rows(`/point_awards?${filter}${wf}&select=student_id,total_points`),
     rows(`/attendance?${filter}&select=student_id,points${wi?`&attendance_date=gte.${wi.sunday}&attendance_date=lte.${wi.saturday}`:''}`),
@@ -236,14 +247,15 @@ async function markAttendance(body:any, source='student') {
   return {success:true,pointsAdded:points,tier:tier==='early'?'مبكر':'عادي',session:'مسائي',student:await studentRecord(sid)};
 }
 
-async function groups(stage='') {
+async function groups(stage='', week: number | null = null) {
   const cat=stageCategory(stage);
   const data=await rows(`/groups?active=eq.true${stage?`&stage_category=eq.${cat}`:''}&order=name.asc&select=*`);
   const allMemberships=await rows('/group_memberships?left_at=is.null&select=group_id,student_id,students(student_code,full_name,grade)');
-  const totals=await balances(allMemberships.map((m:any)=>Number(m.student_id)));
+  const totals=await balances(allMemberships.map((m:any)=>Number(m.student_id)), week);
   return data.map((g:any)=>{
     const members=allMemberships.filter((m:any)=>m.group_id===g.id).map((m:any)=>({
       id:m.students?.student_code,
+      dbId:Number(m.student_id),
       name:m.students?.full_name||'',
       stage:m.students?.grade||'',
       balance:totals[Number(m.student_id)]||0
@@ -330,8 +342,37 @@ Deno.serve(async (req) => {
       for(const code of (body.studentIds||[])){const s=(await rows(`/students?student_code=eq.${encodeURIComponent(String(code))}&select=id`))[0];if(!s)continue;await db(`/group_memberships?student_id=eq.${s.id}&left_at=is.null`,{method:'PATCH',body:JSON.stringify({left_at:riyadhParts().date})});await db('/group_memberships',{method:'POST',body:JSON.stringify({group_id:gid,student_id:s.id,joined_at:riyadhParts().date})});}return json({success:true,groupId:gid});
     }
     if(action==='deleteGroup'){await db(`/groups?id=eq.${body.groupId}`,{method:'PATCH',body:JSON.stringify({active:false})});return json({success:true});}
+    if(action==='getRankingWeeks'){
+      const current=Math.max(2,weekInfo().number);
+      const weeks=[{value:'all',label:'كل الأسابيع'}];
+      for(let number=2;number<=current;number++)weeks.push({value:String(number),label:weekLabel(number)});
+      return json({success:true,weeks,currentWeek:current});
+    }
     if(action==='getAdvancedRanking'){
-      const gs=await groups(categoryLabel(stageCategory(body.category||''))); const selected=(body.groupIds||[]).length?gs.filter(g=>body.groupIds.includes(g.id)):gs; const columns=selected.map(g=>({...g,members:[...g.members].sort((a,b)=>b.balance-a.balance).map(s=>({...s,details:{items:[],edits:[]}}))}));return json({success:true,columns});
+      const requestedWeek=String(body.weekNumber||'all');
+      const week=requestedWeek==='all'?null:Number(requestedWeek);
+      if(week!==null&&(!Number.isInteger(week)||week<2||week>weekInfo().number))return json({success:false,error:'الأسبوع المحدد غير متاح'},400);
+      const gs=await groups(categoryLabel(stageCategory(body.category||'')),week);
+      const selectedIds=new Set((body.groupIds||[]).map((x:any)=>String(x)));
+      const selected=selectedIds.size?gs.filter((g:any)=>selectedIds.has(String(g.id))):gs;
+      const studentIds=[...new Set(selected.flatMap((g:any)=>g.members.map((m:any)=>Number(m.dbId))).filter(Boolean))];
+      const detailsByStudent:Record<number,Record<string,number>>={};
+      const addDetail=(studentId:number,label:string,count:number)=>{if(!detailsByStudent[studentId])detailsByStudent[studentId]={};detailsByStudent[studentId][label]=(detailsByStudent[studentId][label]||0)+count;};
+      if(body.details&&studentIds.length){
+        const filter=`student_id=in.(${studentIds.join(',')})`;
+        const range=week?weekRange(week):null;
+        const [awardRows,attendanceRows,transactionRows]=await Promise.all([
+          rows(`/point_awards?${filter}${week?`&week_number=eq.${week}`:''}&select=student_id,quantity,point_items(name)`),
+          rows(`/attendance?${filter}${range?`&attendance_date=gte.${range.sunday}&attendance_date=lte.${range.saturday}`:''}&select=student_id,attendance_type`),
+          rows(`/point_transactions?${filter}${week?`&week_number=eq.${week}`:''}&select=student_id,reason`)
+        ]);
+        awardRows.forEach((x:any)=>addDetail(Number(x.student_id),x.point_items?.name||'نقاط',Number(x.quantity||0)));
+        attendanceRows.forEach((x:any)=>addDetail(Number(x.student_id),x.attendance_type==='early'?'حضور مبكر':'حضور عادي',1));
+        transactionRows.forEach((x:any)=>addDetail(Number(x.student_id),x.reason||'نقاط مشرف',1));
+      }
+      const withDetails=selected.map((g:any)=>({...g,members:[...g.members].sort((a:any,b:any)=>b.balance-a.balance||String(a.name).localeCompare(String(b.name),'ar')).map((s:any)=>({...s,details:{items:Object.entries(detailsByStudent[Number(s.dbId)]||{}).map(([label,count])=>({label,count})),edits:[]}}))}));
+      const columns=body.mode==='individuals'?[{id:'individuals',name:'ترتيب الأفراد',totalPoints:withDetails.flatMap((g:any)=>g.members).reduce((n:number,s:any)=>n+Number(s.balance||0),0),members:withDetails.flatMap((g:any)=>g.members).sort((a:any,b:any)=>b.balance-a.balance||String(a.name).localeCompare(String(b.name),'ar'))}]:withDetails;
+      return json({success:true,columns,weekNumber:requestedWeek});
     }
     if(action==='getAchievementItems')return json({success:true,items:await pointItems(!!body.includeInactive)});
     if(action==='saveAchievementItem'){
