@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>مشرف هواية</title>
-<link rel="icon" type="image/png" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/png" href="icon-192.png?v=2">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
+<script src="install.js?v=20260907b" defer></script>
 <meta name="theme-color" content="#352868">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -213,6 +214,9 @@
   .ranking-column{min-width:250px;max-width:290px;scroll-snap-align:start;}
   .ranking-column{background:#FBFAFD;border:2px solid #EFEAF8;border-radius:18px;padding:14px;}
   .ranking-total{font-family:'Baloo Bhaijaan 2',sans-serif;font-size:1.2rem;font-weight:800;color:var(--violet);margin:6px 0 12px;}
+  .ranking-week-filters{display:flex;gap:8px;overflow-x:auto;padding:3px 0 10px;scrollbar-width:thin;}
+  .ranking-week-btn{flex:0 0 auto;width:auto;margin:0;padding:9px 14px;border-radius:999px;background:#F3F0FA;color:var(--indigo);box-shadow:none;font-size:.8rem;}
+  .ranking-week-btn.active{background:linear-gradient(95deg,var(--blue),var(--violet));color:#fff;}
 
   /* ===================== عناصر مشتركة لإدارة القوائم (الجوائز / النصائح) ===================== */
   .list-item{
@@ -274,6 +278,7 @@
   }
   .pending-box .icon-btn{padding:4px 8px;font-size:.8rem;}
   #customAmountInput, #bulkCustomAmountInput{margin-bottom:14px;text-align:center;}
+  #pointsReasonInput, #bulkPointsReasonInput{margin-bottom:14px;}
 
   .balance-row{cursor:pointer;}
 
@@ -329,6 +334,7 @@
           <option>عبدالعزيز الجامع</option>
           <option>فهد الخضير</option>
           <option>أسامة نور</option>
+          <option>هادي باشا</option>
         </select>
       </label>
       <label>الرقم السري<input type="text" id="supervisorPinInput" inputmode="numeric" maxlength="4" placeholder="٤ أرقام" required></label>
@@ -363,7 +369,7 @@
     <!-- ============ 3) التسجيل ============ -->
     <div class="page-panel" data-page="3">
       <div class="card">
-        <button type="button" id="installBtn" class="install-btn hidden">📲 ثبّت التطبيق على جوالك</button>
+        <button type="button" id="installBtn" class="install-btn hidden">تنزيل تطبيق مشرف هواية</button>
         <div class="welcome-pill">أهلًا بك، يا مشرف هواية ✨</div>
 
         <div id="formView">
@@ -698,6 +704,9 @@
             <button type="button" class="amount-chip" id="customMinusBtn">−</button>
           </div>
           <input type="number" inputmode="numeric" pattern="[0-9]*" id="customAmountInput" class="hidden" placeholder="أدخل عدد النقاط">
+          <label>اسم النقاط / السبب
+            <input type="text" id="pointsReasonInput" maxlength="100" placeholder="مثال: نقاط الالتزام بالزي">
+          </label>
 
           <div id="pendingAmountBox" class="pending-box hidden">
             <span>المبلغ المحدد:</span>
@@ -739,6 +748,8 @@
         <label>نوع الترتيب<select id="rankingModeSelect"><option value="groups">مجموعات</option><option value="individuals">أفراد</option></select></label>
         <label id="rankingGroupsLabel">المجموعات<div id="rankingGroupChecks"></div></label>
         <label style="display:flex;align-items:center;gap:8px"><input id="rankingDetailsCheck" type="checkbox" checked style="width:22px;margin:0"> إظهار التفاصيل</label>
+        <label>الفترة</label>
+        <div id="rankingWeekFilters" class="ranking-week-filters"><button type="button" class="ranking-week-btn active" data-ranking-week="all">كل الأسابيع</button></div>
         <button type="button" id="showRankingBtn">إظهار الترتيب</button>
       </div>
       <div id="rankingColumns" class="ranking-columns"></div>
@@ -787,6 +798,7 @@
       <button type="button" class="amount-chip" id="bulkCustomMinusBtn">−</button>
     </div>
     <input type="number" inputmode="numeric" pattern="[0-9]*" id="bulkCustomAmountInput" class="hidden" placeholder="أدخل عدد النقاط">
+    <input type="text" id="bulkPointsReasonInput" maxlength="100" placeholder="اسم النقاط، مثال: نقاط الالتزام بالزي">
     <div id="bulkPendingAmountBox" class="pending-box hidden">
       <span id="bulkPendingAmountText"></span>
     </div>
@@ -810,10 +822,9 @@
   const CLOUDINARY_UPLOAD_PRESET = 'hawaya_upload';
   const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload';
 
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVV1SDLMhie0fMAf2qfu-1wB5AmSvRl3u-T7JDm2wUzaut6I8Lo3NTMpd9P9wE706blA/exec';
- const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hawaya-student/';
-  const SUPABASE_URL = 'https://uvcotcfemolqwkgypyeq.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QG-aAmwS2e84wKlPuUhTRw_wgHM-IXO';
+  const APPS_SCRIPT_URL = 'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-api';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2Y290Y2ZlbW9scXdrZ3lweWVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjgzMTUsImV4cCI6MjEwNDQ0NDMxNX0.679kGq8dnhwB6tnpRcnftCwlhYT0iW2Q4VX18sqx8-A';
+  const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps/student/';
 
   // شعار شريط الهيدر فقط — مستقل عن شعار "هواية" المستخدم بالبطاقة وشاشة الترحيب
   const HEADER_LOGO_SRC = 'delet.png';
@@ -827,38 +838,9 @@
      تسجيل دخول المشرف — اسم من قائمة + رقم سري 4 أرقام، يبقى محفوظ
      بنفس الجهاز لين يضغط تسجيل خروج بنفسه
      ==================================================================== */
-  // معرفات الدخول ليست أسرارًا. الأرقام السرية نفسها محفوظة في Supabase Auth
-  // ولا توضع مطلقًا داخل كود المتصفح أو مستودع GitHub.
-  const SUPERVISOR_ACCOUNTS = {
-    'فارس مقبول': 'faris',
-    'ناصر الصياح': 'nasser',
-    'عبدالرحمن بامشموس': 'abdulrahman',
-    'بشارة الزبير': 'bishara',
-    'عبدالعزيز الجامع': 'abdulaziz',
-    'فهد الخضير': 'fahad',
-    'أسامة نور': 'osama'
-  };
+  const SUPERVISOR_NAMES = ['فارس مقبول', 'ناصر الصياح', 'عبدالرحمن بامشموس', 'بشارة الزبير', 'عبدالعزيز الجامع', 'فهد الخضير', 'أسامة نور', 'هادي باشا'];
   const SUPERVISOR_SESSION_KEY = 'hawaya_supervisor_session';
   let currentSupervisorName = '';
-
-  async function supabaseRequest(path, options = {}) {
-    const headers = Object.assign({
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-      'Content-Type': 'application/json'
-    }, options.headers || {});
-    return fetch(SUPABASE_URL + path, Object.assign({}, options, { headers }));
-  }
-
-  async function loadSupervisorProfile(userId, accessToken) {
-    const response = await supabaseRequest(
-      '/rest/v1/profiles?id=eq.' + encodeURIComponent(userId) + '&select=display_name,role,active',
-      { headers: { Authorization: 'Bearer ' + accessToken } }
-    );
-    if (!response.ok) return null;
-    const rows = await response.json();
-    const profile = rows[0];
-    return profile && profile.active && ['supervisor', 'admin'].includes(profile.role) ? profile : null;
-  }
 
   function showSupervisorLogin(errorText) {
     document.getElementById('supervisorLoginView').classList.remove('hidden');
@@ -880,34 +862,15 @@
     errEl.textContent = '';
 
     if (!name || !pin) { errEl.textContent = 'اختر اسمك وأدخل رقمك السري'; return; }
-    if (!/^\d{4}$/.test(pin)) { errEl.textContent = 'أدخل الرقم السري المكوّن من ٤ أرقام'; return; }
-    const account = SUPERVISOR_ACCOUNTS[name];
-    if (!account) { errEl.textContent = 'حساب المشرف غير موجود'; return; }
-
     loginBtn.disabled = true;
     loginBtn.textContent = 'جاري الدخول...';
     try {
-      const response = await supabaseRequest('/auth/v1/token?grant_type=password', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: account + '@supervisors.hewaya.local',
-          password: 'HW' + pin
-        })
-      });
-      const auth = await response.json();
-      if (!response.ok || !auth.access_token || !auth.user) throw new Error('invalid_login');
-      const profile = await loadSupervisorProfile(auth.user.id, auth.access_token);
-      if (!profile) throw new Error('not_staff');
-      const session = {
-        name: profile.display_name || name,
-        accessToken: auth.access_token,
-        refreshToken: auth.refresh_token,
-        expiresAt: Date.now() + (Number(auth.expires_in || 3600) * 1000)
-      };
-      localStorage.setItem(SUPERVISOR_SESSION_KEY, JSON.stringify(session));
-      showSupervisorApp(session.name);
+      const result = await callAppsScript({ action: 'supervisorLogin', name: name, pin: pin });
+      if (!result.success) { errEl.textContent = result.error || 'الرقم السري غير صحيح'; return; }
+      localStorage.setItem(SUPERVISOR_SESSION_KEY, JSON.stringify({ name: result.name || name, token: result.token, expiresAt: result.expiresAt }));
+      showSupervisorApp(name);
     } catch (_) {
-      errEl.textContent = 'الاسم أو الرقم السري غير صحيح';
+      errEl.textContent = 'تعذر الاتصال، حاول مرة أخرى';
     } finally {
       loginBtn.disabled = false;
       loginBtn.textContent = 'دخول';
@@ -921,22 +884,12 @@
     showSupervisorLogin();
   });
 
-  (async function initSupervisorAuth() {
+  (function initSupervisorAuth() {
     try {
       const saved = JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY) || 'null');
-      if (!saved || !saved.accessToken || Date.now() >= saved.expiresAt) throw new Error('expired');
-      const response = await supabaseRequest('/auth/v1/user', {
-        headers: { Authorization: 'Bearer ' + saved.accessToken }
-      });
-      if (!response.ok) throw new Error('invalid');
-      const user = await response.json();
-      const profile = await loadSupervisorProfile(user.id, saved.accessToken);
-      if (!profile) throw new Error('not_staff');
-      showSupervisorApp(profile.display_name || saved.name);
-    } catch (_) {
-      localStorage.removeItem(SUPERVISOR_SESSION_KEY);
-      showSupervisorLogin();
-    }
+      if (saved && saved.token && new Date(saved.expiresAt).getTime() > Date.now() && SUPERVISOR_NAMES.includes(saved.name)) showSupervisorApp(saved.name);
+      else { localStorage.removeItem(SUPERVISOR_SESSION_KEY); showSupervisorLogin(); }
+    } catch (_) { localStorage.removeItem(SUPERVISOR_SESSION_KEY); showSupervisorLogin(); }
   })();
 
   /**
@@ -944,37 +897,6 @@
    * (beforeinstallprompt). بالآيفون/سفاري ما تدعم آبل هذا إطلاقًا، فنعرض
    * شرح بالخطوات اليدوية بدالها.
    */
-  const installBtn = document.getElementById('installBtn');
-  const iosInstallOverlay = document.getElementById('iosInstallOverlay');
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  let deferredInstallPrompt = null;
-
-  if (!isStandalone && isIOS) {
-    installBtn.classList.remove('hidden');
-  }
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    if (!isStandalone) installBtn.classList.remove('hidden');
-  });
-
-  installBtn.addEventListener('click', async () => {
-    if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice;
-      deferredInstallPrompt = null;
-      installBtn.classList.add('hidden');
-    } else if (isIOS) {
-      iosInstallOverlay.classList.remove('hidden');
-    }
-  });
-
-  document.getElementById('closeIosHint').addEventListener('click', () => {
-    iosInstallOverlay.classList.add('hidden');
-  });
-
   /* ====================================================================
      التنقل بين التبويبات الثلاثة — نفس آلية تطبيق الطالب بالضبط:
      الانزلاق يكون بنفس جهة الأيقونة المضغوطة
@@ -1030,7 +952,7 @@
       loadPurchaseRequests();
     }
     if (newIndex === 4) loadGroupsAdmin();
-    if (newIndex === 5) loadRankingGroupOptions();
+    if (newIndex === 5) { loadRankingGroupOptions(); loadRankingWeeks(); }
     if (newIndex === 6) loadAchievementItemsAdmin();
   }
 
@@ -1135,9 +1057,16 @@
   }
 
   async function callAppsScript(payload) {
+    let session = null;
+    try { session = JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY) || 'null'); } catch (_) {}
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        ...(session && session.token ? { 'x-hawaya-session': session.token } : {})
+      },
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -2147,6 +2076,7 @@
     selectedStudentId = id;
     pendingAmount = null;
     updatePendingDisplay();
+    document.getElementById('pointsReasonInput').value = '';
     document.getElementById('customAmountInput').classList.add('hidden');
     document.getElementById('editStudentForm').classList.add('hidden');
 
@@ -2364,7 +2294,8 @@
     const errEl = document.getElementById('adjustError');
     btn.disabled = true; btn.textContent = 'جاري التأكيد...'; errEl.textContent = '';
     try {
-      const result = await callAppsScript({ action: 'adjustPoints', id: selectedStudentId, amount: pendingAmount, supervisorName: currentSupervisorName });
+      const reason = document.getElementById('pointsReasonInput').value.trim();
+      const result = await callAppsScript({ action: 'adjustPoints', id: selectedStudentId, amount: pendingAmount, reason: reason, supervisorName: currentSupervisorName });
       if (!result.success) { errEl.textContent = result.error || 'تعذر التعديل'; return; }
 
       document.getElementById('detailBalance').textContent = result.newBalance + ' نقطة';
@@ -2376,6 +2307,7 @@
       }
 
       pendingAmount = null;
+      document.getElementById('pointsReasonInput').value = '';
       updatePendingDisplay();
       loadPointsLog(selectedStudentId, true);
     } catch (_) {
@@ -2431,6 +2363,7 @@
       bar.classList.add('hidden');
       document.getElementById('balanceListView').classList.remove('bulk-bar-open');
       bulkPendingAmount = null;
+      document.getElementById('bulkPointsReasonInput').value = '';
       updateBulkPendingDisplay();
       document.getElementById('bulkCustomAmountInput').classList.add('hidden');
       return;
@@ -2531,7 +2464,8 @@
     let failMsg = null;
     try {
       const ids = Array.from(selectedBulkIds);
-      const result = await callAppsScript({ action: 'bulkAdjustPoints', ids: ids, amount: bulkPendingAmount, supervisorName: currentSupervisorName });
+      const reason = document.getElementById('bulkPointsReasonInput').value.trim();
+      const result = await callAppsScript({ action: 'bulkAdjustPoints', ids: ids, amount: bulkPendingAmount, reason: reason, supervisorName: currentSupervisorName });
       if (!result.success) {
         failMsg = 'فشل، حاول مرة أخرى';
       } else {
@@ -2545,6 +2479,7 @@
         }
         selectedBulkIds.clear();
         bulkPendingAmount = null;
+        document.getElementById('bulkPointsReasonInput').value = '';
         updateBulkBar();
         updateBulkPendingDisplay();
         filterAndRenderBalanceStudents();
@@ -2685,6 +2620,29 @@
     const data = await callAppsScript({ action: 'getGroups', stage: stage });
     document.getElementById('rankingGroupChecks').innerHTML = `<label style="display:flex;gap:8px"><input type="checkbox" id="rankingAllGroups" checked style="width:22px;margin:0">كل المجموعات</label>` + (data.groups || []).map(g => `<label style="display:flex;gap:8px"><input class="ranking-group-check" type="checkbox" value="${g.id}" style="width:22px;margin:0">${g.name}</label>`).join('');
   }
+  let selectedRankingWeek = 'all';
+  async function loadRankingWeeks() {
+    const wrap = document.getElementById('rankingWeekFilters');
+    let data;
+    try { data = await callAppsScript({ action: 'getRankingWeeks' }); }
+    catch (_) { data = { success: false }; }
+    const supported = data.success && Array.isArray(data.weeks) && data.weeks.length;
+    const weeks = supported ? data.weeks : [{ value:'all', label:'كل الأسابيع' }];
+    if (!weeks.some(w => String(w.value) === String(selectedRankingWeek))) selectedRankingWeek = 'all';
+    wrap.innerHTML = weeks.map(w => `<button type="button" class="ranking-week-btn ${String(w.value) === String(selectedRankingWeek) ? 'active' : ''}" data-ranking-week="${w.value}">${w.label}</button>`).join('');
+    if (!supported) {
+      const notice = document.createElement('p');
+      notice.textContent = 'تعذر تحميل الأسابيع. تحقق من الاتصال ومن نشر أحدث كود Apps Script الداعم لفلتر الأسابيع.';
+      notice.setAttribute('role', 'status');
+      wrap.appendChild(notice);
+    }
+  }
+  document.getElementById('rankingWeekFilters').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-ranking-week]');
+    if (!btn) return;
+    selectedRankingWeek = btn.dataset.rankingWeek;
+    document.querySelectorAll('[data-ranking-week]').forEach(x => x.classList.toggle('active', x === btn));
+  });
   document.getElementById('rankingStageSelect').addEventListener('change', loadRankingGroupOptions);
   document.getElementById('rankingModeSelect').addEventListener('change', e => document.getElementById('rankingGroupsLabel').classList.toggle('hidden', e.target.value === 'individuals'));
 
@@ -2693,8 +2651,12 @@
     wrap.innerHTML = '<div class="card"><p class="list-empty">جاري تحميل الترتيب...</p></div>';
     const allBox = document.getElementById('rankingAllGroups');
     const groupIds = allBox && !allBox.checked ? Array.from(document.querySelectorAll('.ranking-group-check:checked')).map(x=>x.value) : [];
-    const data = await callAppsScript({ action: 'getAdvancedRanking', category: document.getElementById('rankingStageSelect').value, mode: document.getElementById('rankingModeSelect').value, groupIds, details: document.getElementById('rankingDetailsCheck').checked });
+    const data = await callAppsScript({ action: 'getAdvancedRanking', category: document.getElementById('rankingStageSelect').value, mode: document.getElementById('rankingModeSelect').value, groupIds, details: document.getElementById('rankingDetailsCheck').checked, weekNumber: selectedRankingWeek });
     const columns = data.columns || [];
+    if (selectedRankingWeek !== 'all' && String(data.weekNumber) !== String(selectedRankingWeek)) {
+      wrap.innerHTML = '<div class="card"><p role="alert">لم يؤكد الخادم تطبيق الأسبوع المحدد. حدّث نشر Apps Script قبل عرض ترتيب أسبوعي.</p></div>';
+      return;
+    }
     if (!data.success || !columns.length) { wrap.innerHTML = '<div class="card"><p class="list-empty">لا توجد نتائج مطابقة</p></div>'; return; }
     wrap.innerHTML = columns.map((g, groupIndex) => `<div class="ranking-column card">
       <div class="section-title">${groupIndex + 1}. ${g.name}</div>
@@ -2703,6 +2665,7 @@
     </div>`).join('');
   });
   loadRankingGroupOptions();
+  loadRankingWeeks();
 
   /* ==================== إدارة بنود النقاط ==================== */
   let achievementItemsAdminCache = [];

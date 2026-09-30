@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="icon-512.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#352868">
+<meta name="theme-color" content="#68459A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="هواية">
@@ -18,18 +18,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;700;800&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --blue:#2F6FBF;
-    --indigo:#352868;
-    --violet:#7C5BA6;
-    --pink:#F178A8;
-    --sun:#FFC83C;
+    --blue:#68459A;
+    --indigo:#4B2F70;
+    --violet:#8A5CB0;
+    --pink:#F6529A;
+    --sun:#FFA826;
     --rowad-pink:#F6529A;
     --rowad-orange:#FFA826;
     --rowad-purple:#68459A;
-    --bg:#F6F4FB;
+    --bg:#FFF8F2;
     --card:#FFFFFF;
-    --text:#2B2640;
-    --text-muted:#79738F;
+    --text:#342447;
+    --text-muted:#81748D;
     --error:#D1485B;
     --success:#2E9E6C;
     --radius:22px;
@@ -40,8 +40,9 @@
   body{
     min-height:100vh;
     background:
-      radial-gradient(circle at 88% -6%, rgba(255,200,60,.22), transparent 38%),
-      radial-gradient(circle at -10% 102%, rgba(124,91,166,.16), transparent 42%),
+      radial-gradient(circle at 92% -5%, rgba(255,168,38,.24), transparent 36%),
+      radial-gradient(circle at -8% 32%, rgba(246,82,154,.12), transparent 34%),
+      radial-gradient(circle at 104% 102%, rgba(104,69,154,.16), transparent 40%),
       var(--bg);
     font-family:'Almarai', sans-serif;
     color:var(--text);
@@ -72,7 +73,8 @@
   #loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;}
   .login-card{
     width:100%;max-width:420px;background:var(--card);border-radius:var(--radius);
-    padding:30px 26px 34px;box-shadow:0 18px 50px -12px rgba(53,40,104,.22);
+    padding:30px 26px 34px;box-shadow:0 18px 50px -12px rgba(104,69,154,.24);
+    border:2px solid rgba(246,82,154,.10);
   }
   .logo{display:block;width:100%;max-width:170px;margin:0 auto 16px;}
   .welcome-pill{
@@ -85,17 +87,17 @@
   label{display:block;font-size:.88rem;font-weight:700;color:var(--indigo);margin-bottom:16px;}
   input{
     width:100%;margin-top:8px;padding:13px 14px;border-radius:14px;
-    border:2px solid #E7E2F2;background:#FBFAFD;
+    border:2px solid #E9DCF0;background:#FFF9FC;
     font-family:'Almarai', sans-serif;font-size:1rem;color:var(--text);
     outline:none;transition:border-color .15s ease;
   }
-  input:focus{border-color:var(--blue);}
+  input:focus{border-color:var(--rowad-pink);box-shadow:0 0 0 3px rgba(246,82,154,.10);}
   input[type="checkbox"], input[type="radio"]{width:20px;height:20px;margin:0;padding:0;flex-shrink:0;accent-color:var(--violet);}
   button{
     width:100%;padding:15px;border:none;border-radius:999px;
     font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.05rem;
-    color:#fff;cursor:pointer;background:linear-gradient(95deg, var(--blue), var(--violet));
-    box-shadow:0 10px 24px -8px rgba(47,111,191,.55);
+    color:#fff;cursor:pointer;background:linear-gradient(95deg,var(--rowad-purple),var(--rowad-pink));
+    box-shadow:0 10px 24px -8px rgba(104,69,154,.48);
     transition:transform .12s ease;
   }
   button:active{transform:translateY(1px) scale(.99);}
@@ -106,7 +108,7 @@
   .install-btn{
     display:block;width:fit-content;margin:0 auto 14px;
     padding:9px 18px;border-radius:999px;border:none;
-    background:#F3F0FA;color:var(--indigo);
+    background:#FFF0F7;color:var(--rowad-purple);border:1px solid rgba(246,82,154,.14);
     font-family:'Almarai', sans-serif;font-weight:700;font-size:.82rem;
     box-shadow:none;cursor:pointer;
   }
@@ -133,11 +135,11 @@
   .ios-step-num{
     flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
     width:22px;height:22px;border-radius:50%;
-    background:var(--violet);color:#fff;font-size:.75rem;font-weight:700;
+    background:linear-gradient(135deg,var(--rowad-purple),var(--rowad-pink));color:#fff;font-size:.75rem;font-weight:700;
   }
   .ios-share-icon{font-size:1rem;}
   .ios-install-card button{margin-top:8px;}
-  .btn-secondary{background:#F3F0FA;color:var(--indigo);box-shadow:none;margin-top:10px;}
+  .btn-secondary{background:#FFF0F7;color:var(--rowad-purple);box-shadow:none;margin-top:10px;}
 
   /* ===================== التطبيق الرئيسي ===================== */
   #appView{min-height:100vh;display:flex;flex-direction:column;}
@@ -151,7 +153,7 @@
   .app-header .brand-logos .rowad-logo{height:34px;max-height:34px;max-width:76px;}
 
   /* الشريط العلوي: الشعار + ترحيب صغير بجانبه، مباشرة على خلفية الصفحة */
-  .app-header{padding:14px 18px 6px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .app-header{padding:14px 18px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(110deg,rgba(255,248,238,.92),rgba(255,240,247,.82),rgba(238,232,250,.78));border-bottom:1px solid rgba(104,69,154,.08);}
   .header-logo{height:46px;width:auto;display:inline-block;flex-shrink:0;}
   .header-welcome{font-size:.8rem;font-weight:700;color:var(--indigo);text-align:left;}
 
@@ -165,12 +167,12 @@
   .page-panel[data-page="0"]{display:block;transform:translateX(0);}
 
   .section-card{
-    background:var(--card);border-radius:var(--radius);padding:22px 20px;
-    box-shadow:0 14px 38px -16px rgba(53,40,104,.18);margin-bottom:16px;
-    border-top:3px solid rgba(246,82,154,.20);
+    background:linear-gradient(145deg,#FFFFFF 0%,#FFF9FC 64%,#F8F3FC 100%);border-radius:var(--radius);padding:22px 20px;
+    box-shadow:0 14px 38px -16px rgba(104,69,154,.22);margin-bottom:16px;
+    border:1px solid rgba(104,69,154,.09);border-top:4px solid rgba(246,82,154,.52);
   }
-  .section-card:nth-of-type(3n+2){border-top-color:rgba(255,168,38,.30);}
-  .section-card:nth-of-type(3n){border-top-color:rgba(104,69,154,.25);}
+  .section-card:nth-of-type(3n+2){border-top-color:rgba(255,168,38,.72);}
+  .section-card:nth-of-type(3n){border-top-color:rgba(104,69,154,.62);}
   .section-title{
     font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:700;font-size:1.15rem;color:var(--indigo);margin:0 0 6px;
     display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;
@@ -190,11 +192,11 @@
   .leaderboard-scroll::-webkit-scrollbar{height:0;}
   .leader-card{
     flex:0 0 84px;scroll-snap-align:start;text-align:center;
-    background:#FBFAFD;border:2px solid #EFEAF8;border-radius:16px;padding:10px 6px;
+    background:#FFF8FC;border:2px solid #F0E3F2;border-radius:16px;padding:10px 6px;
   }
   .leader-rank{
     font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:800;font-size:.74rem;color:#fff;
-    background:linear-gradient(95deg, var(--blue), var(--violet));border-radius:999px;
+    background:linear-gradient(95deg,var(--rowad-purple),var(--rowad-pink));border-radius:999px;
     display:inline-block;padding:2px 9px;margin-bottom:6px;
   }
   .leader-rank.top1{background:linear-gradient(95deg, var(--sun), #FFD976);color:#5A4300;}
@@ -209,7 +211,7 @@
   /* الإعلانات والجوائز — صف عام */
   /* الإعلان الأحدث — يطلع بحجم أكبر وضوحًا، يضغط عليه لفتح الصورة كاملة */
   .announcement-featured{
-    border-radius:18px;overflow:hidden;margin-bottom:14px;background:#FBFAFD;border:2px solid #EFEAF8;
+    border-radius:18px;overflow:hidden;margin-bottom:14px;background:#FFF8FC;border:2px solid #F0E3F2;
   }
   .announcement-featured-img{
     width:100%;height:170px;background-size:cover;background-position:center;cursor:pointer;
@@ -218,7 +220,7 @@
 
   .reward-item{
     display:flex;align-items:center;gap:14px;padding:14px;border-radius:18px;
-    background:#FBFAFD;border:2px solid #EFEAF8;margin-bottom:12px;
+    background:#FFF8FC;border:2px solid #F0E3F2;margin-bottom:12px;
   }
   .reward-emoji{font-size:1.8rem;flex-shrink:0;width:48px;height:48px;display:flex;align-items:center;justify-content:center;
     background:#fff;border-radius:14px;border:2px solid #EFEAF8;}
@@ -228,7 +230,7 @@
   /* أزرار/شارات الجوائز */
   .reward-buy-btn{
     flex-shrink:0;width:auto;padding:9px 18px;font-size:.85rem;border-radius:999px;
-    background:linear-gradient(95deg, var(--blue), var(--violet));color:#fff;box-shadow:none;
+    background:linear-gradient(95deg,var(--rowad-purple),var(--rowad-pink));color:#fff;box-shadow:none;
   }
   .reward-badge{flex-shrink:0;font-size:.72rem;font-weight:800;padding:7px 12px;border-radius:999px;white-space:nowrap;text-align:center;}
   .reward-badge.sold-out{background:#FBE9ED;color:var(--error);}
@@ -282,13 +284,13 @@
   .balance-lbl{color:var(--text-muted);font-size:.88rem;margin-top:4px;}
   .refresh-btn{
     width:auto;display:block;margin:18px auto 0;padding:10px 22px;font-size:.88rem;
-    background:#F3F0FA;color:var(--indigo);box-shadow:none;
+    background:#FFF0F7;color:var(--rowad-purple);box-shadow:none;
   }
   .info-photo-wrap{display:flex;justify-content:center;margin-bottom:14px;}
   .info-avatar{
     width:76px;height:76px;border-radius:18px;background-size:cover;background-position:center;
-    background-color:#F3F0FA;display:flex;align-items:center;justify-content:center;font-size:2rem;
-    border:2px solid #E7E2F2;
+    background-color:#FFF0F7;display:flex;align-items:center;justify-content:center;font-size:2rem;
+    border:2px solid #E9DCF0;
   }
   .info-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #EFEAF8;}
   .info-row:last-child{border-bottom:none;}
@@ -298,9 +300,9 @@
   /* نقاطي — الإنجازات */
   .achievement-row{
     display:flex;align-items:center;gap:10px;padding:13px;border-radius:14px;
-    background:#FBFAFD;border:2px solid #EFEAF8;margin-bottom:10px;cursor:pointer;
+    background:linear-gradient(135deg,#FFFDFE,#FFF5FA);border:2px solid #F0E3F2;margin-bottom:10px;cursor:pointer;
   }
-  .achievement-row.done{background:#EAF7EF;border-color:#BEE6CC;cursor:default;}
+  .achievement-row.done{background:linear-gradient(135deg,#F1EAF9,#FFF0F7);border-color:rgba(104,69,154,.24);cursor:default;}
   .achievement-checks{display:flex;gap:9px;align-items:center;}
   .achievement-checks input{width:22px;height:22px;margin:0;accent-color:var(--violet);}
   .achievement-checks input{appearance:none;-webkit-appearance:none;border:2px solid #CFC5DE;border-radius:50%;background:#fff;display:grid;place-content:center;cursor:pointer;}
@@ -315,11 +317,11 @@
   .activity-details{font-size:.7rem;color:var(--text-muted);line-height:1.7;margin-top:3px;}
   .attendance-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
   .attendance-actions button{margin:0;padding:12px 8px;font-size:.86rem;}
-  .attendance-normal-btn{background:linear-gradient(95deg,var(--blue),var(--violet));}
-  .attendance-early-btn{background:linear-gradient(95deg,var(--rowad-pink),var(--rowad-purple));}
+  .attendance-normal-btn{background:linear-gradient(95deg,var(--rowad-purple),#8A5CB0);}
+  .attendance-early-btn{background:linear-gradient(95deg,var(--rowad-orange),var(--rowad-pink));}
   .group-member-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #EFEAF8;}
   .group-member-row:last-child{border-bottom:none;}
-  .group-member-row.me{background:#F3F0FA;margin:0 -10px;padding:11px 10px;border-radius:12px;}
+  .group-member-row.me{background:#FFF0F7;margin:0 -10px;padding:11px 10px;border-radius:12px;}
   .achievement-label{flex:1;font-weight:700;color:var(--indigo);font-size:.9rem;}
   .achievement-points{
     font-family:'Baloo Bhaijaan 2', sans-serif;font-weight:800;font-size:.82rem;color:#A9700A;
@@ -356,7 +358,7 @@
   /* القائمة السفلية */
   .bottom-nav{
     position:fixed;bottom:0;right:0;left:0;height:var(--nav-h);
-    background:var(--card);box-shadow:0 -10px 30px -18px rgba(53,40,104,.35);
+    background:linear-gradient(90deg,#FFF8EE,#FFF0F7,#EEE8FA);box-shadow:0 -10px 30px -18px rgba(104,69,154,.38);
     display:flex;align-items:stretch;z-index:30;
     border-radius:24px 24px 0 0;
   }
@@ -367,7 +369,7 @@
   }
   .nav-btn .nav-ic-img{width:27px;height:27px;object-fit:contain;transition:transform .2s ease, opacity .2s ease;opacity:.5;}
   .nav-btn.active .nav-ic-img{transform:translateY(-2px);opacity:1;}
-  .nav-btn.active{color:var(--indigo);}
+  .nav-btn.active{color:var(--rowad-purple);background:rgba(246,82,154,.08);}
 
   /* تأكيد الشراء يطلع جنب زر الشراء مباشرة، بدون أي نافذة منبثقة أو تنبيه عائم */
   .reward-confirm-row{display:flex;gap:6px;flex-shrink:0;}
@@ -628,8 +630,9 @@
         الشاشة الرئيسية (icon-512/192/180.png) المحددة بأعلى الملف
      3) عدّل CONTACTS بالأسفل ببياناتك الفعلية (رابط واتساب/هاتف/بريد)
      ========================================================================= */
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVV1SDLMhie0fMAf2qfu-1wB5AmSvRl3u-T7JDm2wUzaut6I8Lo3NTMpd9P9wE706blA/exec';
-const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hawaya-student/';
+  const APPS_SCRIPT_URL = 'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-api';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2Y290Y2ZlbW9scXdrZ3lweWVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjgzMTUsImV4cCI6MjEwNDQ0NDMxNX0.679kGq8dnhwB6tnpRcnftCwlhYT0iW2Q4VX18sqx8-A';
+const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps/student/';
   const LOGO_SRC = 'logo.png?v=20260905';
   const CLOUDINARY_CLOUD_NAME = 'dhv0ypi5d';
   const CLOUDINARY_UPLOAD_PRESET = 'hawaya_upload';
@@ -1056,9 +1059,18 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hawaya-student/';
 
   // ====== استدعاء الخادم ======
   async function callAppsScript(payload) {
+    const saved = getSession();
+    if (saved) {
+      if (!payload.id) payload.id = saved.id;
+      if (!payload.password) payload.password = saved.pw;
+    }
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+      },
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
