@@ -20,11 +20,21 @@ async function db(path: string, init: RequestInit = {}) {
   headers.set('Authorization', `Bearer ${SERVICE_KEY}`);
   headers.set('Content-Type', 'application/json');
   if (!headers.has('Prefer')) headers.set('Prefer', 'return=representation');
-  const res = await fetch(`${REST}${path}`, { ...init, headers });
-  const text = await res.text();
-  const body = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new Error(body?.message || body?.error || `DB ${res.status}`);
-  return body;
+
+  let lastError = '';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(`${REST}${path}`, { ...init, headers });
+    const text = await res.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch (_) { body = null; }
+    if (res.ok) return body;
+
+    lastError = body?.message || body?.error || text || `DB ${res.status}`;
+    const retryable = res.status >= 500 || res.status === 401 || String(lastError).includes('JWT issued at future');
+    if (!retryable || attempt === 2) throw new Error(lastError);
+    await new Promise((resolve) => setTimeout(resolve, 180 * (attempt + 1)));
+  }
+  throw new Error(lastError || 'Database request failed');
 }
 
 async function rpc(name: string, payload: Record<string, unknown>) {
@@ -193,7 +203,8 @@ async function attendanceStatus(body:any) {
   const sid=await verifyStudent(body); if(!sid)return {success:false,error:'بيانات الدخول غير صحيحة'};
   const wi=riyadhParts(); const allowed=[0,2,4].includes(wi.day)&&wi.minutes>=900&&wi.minutes<=1439;
   const existing=(await rows(`/attendance?student_id=eq.${sid}&attendance_date=eq.${wi.date}&select=attendance_type`))[0];
-  return {success:true,available:allowed,alreadyMarked:!!existing,tier:existing?.attendance_type,error:allowed?'':'الحضور متاح الأحد والثلاثاء والخميس من 3 عصرًا إلى 11:59 مساءً'};
+  const reason=allowed?'':'الحضور متاح الأحد والثلاثاء والخميس من 3 عصرًا إلى 11:59 مساءً';
+  return {success:true,allowed,available:allowed,alreadyMarked:!!existing,tier:existing?.attendance_type,reason,error:reason};
 }
 
 async function markAttendance(body:any, source='student') {
@@ -246,8 +257,20 @@ Deno.serve(async (req) => {
     if(action==='getLeaderboard')return json({success:true,leaderboard:(await studentsList(body.stage||'')).sort((a,b)=>b.balance-a.balance)});
     if(action==='getStudentGroupData'){
       const sid=await verifyStudent(body); if(!sid)return json({success:false,error:'بيانات الدخول غير صحيحة'});
-      const gm=(await rows(`/group_memberships?student_id=eq.${sid}&left_at=is.null&select=group_id`))[0]; if(!gm)return json({success:true,hasGroup:false});
-      const g=(await groups('')).find(x=>x.id===gm.group_id); return json({success:true,hasGroup:!!g,group:g});
+      const gm=(await rows(`/group_memberships?student_id=eq.${sid}&left_at=is.null&select=group_id`))[0];
+      if(!gm)return json({success:true,hasGroup:false});
+      const g=(await rows(`/groups?id=eq.${gm.group_id}&active=eq.true&select=id,name,stage_category`))[0];
+      if(!g)return json({success:true,hasGroup:false});
+      const memberships=await rows(`/group_memberships?group_id=eq.${gm.group_id}&left_at=is.null&select=student_id,students(student_code,full_name,grade)`);
+      const members=await Promise.all(memberships.map(async(m:any)=>({
+        id:m.students?.student_code,
+        name:m.students?.full_name||'',
+        stage:m.students?.grade||'',
+        balance:await balance(m.student_id)
+      })));
+      members.sort((a:any,b:any)=>b.balance-a.balance||String(a.name).localeCompare(String(b.name),'ar'));
+      const group={id:g.id,name:g.name,stage:categoryLabel(g.stage_category),members};
+      return json({success:true,hasGroup:true,group});
     }
     if(action==='updateStudentPhoto'){
       const sid=await verifyStudent(body); if(!sid)return json({success:false,error:'بيانات الدخول غير صحيحة'});
