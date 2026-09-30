@@ -27,6 +27,7 @@ create table if not exists app_private.api_sessions (
   created_at timestamptz not null default now()
 );
 create index if not exists api_sessions_expiry_idx on app_private.api_sessions(expires_at);
+create index if not exists api_sessions_supervisor_idx on app_private.api_sessions(supervisor_id);
 
 create table if not exists public.point_transactions (
   id bigint generated always as identity primary key,
@@ -43,6 +44,12 @@ create index if not exists point_transactions_student_week_idx on public.point_t
 create index if not exists point_transactions_date_idx on public.point_transactions(activity_date);
 alter table public.point_transactions enable row level security;
 revoke all on public.point_transactions from anon, authenticated;
+drop policy if exists point_transactions_no_client_access on public.point_transactions;
+create policy point_transactions_no_client_access on public.point_transactions
+for all to anon, authenticated using (false) with check (false);
+
+revoke execute on function public.submit_student_attendance(text) from public, anon, authenticated;
+revoke execute on function public.submit_student_points(text,integer,date) from public, anon, authenticated;
 
 insert into public.program_settings(id) values (1) on conflict (id) do nothing;
 
