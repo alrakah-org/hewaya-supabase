@@ -604,8 +604,15 @@
       <div id="balanceListView">
         <div class="card">
         <div class="section-title">➕ إضافة نقاط</div>
-          <div class="section-sub">ابحث بالاسم أو الرقم، أو اختر مرحلة. حدد طالب لتعديل رصيده، أو عدة طلاب لتعديل جماعي</div>
+          <div class="section-sub">اختر إضافة النقاط لطلاب محددين أو لمجموعة كاملة</div>
+          <label>طريقة الإضافة
+            <select id="pointsTargetModeSelect">
+              <option value="students">طلاب</option>
+              <option value="groups">مجموعات</option>
+            </select>
+          </label>
 
+          <div id="studentPointsTargetSection">
           <label>بحث بالاسم أو الرقم<input type="text" id="balanceSearchInput" placeholder="مثال: محمد أو 0537"></label>
           <label>أو اختر مرحلة
             <select id="balanceStageSelect">
@@ -637,6 +644,32 @@
             <p class="list-empty">اختر مرحلة أو ابحث بالاسم/الرقم لعرض الطلاب</p>
           </div>
           <button type="button" id="refreshStudentsCacheBtn" class="btn-secondary">🔄 تحديث قائمة الطلاب</button>
+          </div>
+
+          <div id="groupPointsTargetSection" class="hidden">
+            <label>المرحلة
+              <select id="groupPointsStageSelect">
+                <option value="رابع+خامس+سادس">رابع+خامس+سادس</option>
+                <option value="متوسط">المرحلة المتوسطة</option>
+                <option value="ثانوي">المرحلة الثانوية</option>
+              </select>
+            </label>
+            <div id="groupPointsChecks"><p class="list-empty">اختر وضع المجموعات لعرضها</p></div>
+            <div class="amount-selector" style="margin-top:14px;">
+              <button type="button" class="amount-chip" data-group-points-amount="10">+10</button>
+              <button type="button" class="amount-chip" data-group-points-amount="20">+20</button>
+              <button type="button" class="amount-chip" data-group-points-amount="30">+30</button>
+              <button type="button" class="amount-chip" id="groupPointsCustomPlusBtn">+</button>
+              <button type="button" class="amount-chip" id="groupPointsCustomMinusBtn">−</button>
+            </div>
+            <input type="number" inputmode="numeric" id="groupPointsCustomAmountInput" class="hidden" placeholder="أدخل عدد النقاط">
+            <label>اسم النقاط / السبب
+              <input type="text" id="groupPointsReasonInput" maxlength="100" placeholder="مثال: نقاط الالتزام بالزي">
+            </label>
+            <div id="groupPointsPendingBox" class="pending-box hidden"><span id="groupPointsPendingText"></span></div>
+            <button type="button" id="groupPointsConfirmBtn" disabled>إضافة النقاط للمجموعات المحددة</button>
+            <p class="error" id="groupPointsStatus"></p>
+          </div>
         </div>
       </div>
 
@@ -2068,6 +2101,125 @@
   document.getElementById('balanceSearchInput').addEventListener('input', filterAndRenderBalanceStudents);
   document.getElementById('balanceStageSelect').addEventListener('change', filterAndRenderBalanceStudents);
   document.getElementById('refreshStudentsCacheBtn').addEventListener('click', loadAllStudentsCache);
+
+  // ===== إضافة النقاط للمجموعات =====
+  let groupPointsGroups = [];
+  let groupPointsAmount = null;
+  let groupPointsCustomSign = 1;
+
+  function selectedGroupPointGroups() {
+    const selected = new Set(Array.from(document.querySelectorAll('.group-points-check:checked')).map((x) => String(x.value)));
+    return groupPointsGroups.filter((g) => selected.has(String(g.id)));
+  }
+
+  function updateGroupPointsConfirmState() {
+    const selected = selectedGroupPointGroups();
+    const studentIds = new Set(selected.flatMap((g) => (g.members || []).map((m) => String(m.id))));
+    const btn = document.getElementById('groupPointsConfirmBtn');
+    btn.disabled = groupPointsAmount === null || selected.length === 0 || studentIds.size === 0;
+    btn.textContent = selected.length
+      ? ('إضافة النقاط إلى ' + studentIds.size + ' طالب في ' + selected.length + ' مجموعة')
+      : 'إضافة النقاط للمجموعات المحددة';
+    const box = document.getElementById('groupPointsPendingBox');
+    if (groupPointsAmount === null) box.classList.add('hidden');
+    else {
+      box.classList.remove('hidden');
+      document.getElementById('groupPointsPendingText').textContent = 'النقاط لكل طالب: ' + (groupPointsAmount > 0 ? '+' : '') + groupPointsAmount;
+    }
+  }
+
+  async function loadGroupPointsOptions() {
+    const wrap = document.getElementById('groupPointsChecks');
+    const stage = document.getElementById('groupPointsStageSelect').value;
+    wrap.innerHTML = '<p class="list-empty">جاري تحميل المجموعات...</p>';
+    document.getElementById('groupPointsStatus').textContent = '';
+    try {
+      const data = await callAppsScript({ action: 'getGroups', stage });
+      groupPointsGroups = data.success ? (data.groups || []) : [];
+      if (!groupPointsGroups.length) {
+        wrap.innerHTML = '<p class="list-empty">لا توجد مجموعات في هذه المرحلة</p>';
+      } else {
+        wrap.innerHTML = '<label class="select-all-label"><input type="checkbox" id="groupPointsSelectAll"><span>تحديد كل المجموعات</span></label>' +
+          groupPointsGroups.map((g) => '<label class="list-item" style="cursor:pointer;"><input type="checkbox" class="group-points-check" value="' + g.id + '"><span class="list-item-body"><span class="list-item-title">' + g.name + '</span><span class="list-item-sub">' + (g.members || []).length + ' طالب</span></span></label>').join('');
+        document.getElementById('groupPointsSelectAll').addEventListener('change', (e) => {
+          document.querySelectorAll('.group-points-check').forEach((x) => { x.checked = e.target.checked; });
+          updateGroupPointsConfirmState();
+        });
+        document.querySelectorAll('.group-points-check').forEach((x) => x.addEventListener('change', updateGroupPointsConfirmState));
+      }
+      updateGroupPointsConfirmState();
+    } catch (_) {
+      groupPointsGroups = [];
+      wrap.innerHTML = '<p class="list-empty">تعذر تحميل المجموعات، حاول مرة أخرى</p>';
+      updateGroupPointsConfirmState();
+    }
+  }
+
+  document.getElementById('pointsTargetModeSelect').addEventListener('change', (e) => {
+    const groupsMode = e.target.value === 'groups';
+    document.getElementById('studentPointsTargetSection').classList.toggle('hidden', groupsMode);
+    document.getElementById('groupPointsTargetSection').classList.toggle('hidden', !groupsMode);
+    if (groupsMode) loadGroupPointsOptions();
+  });
+  document.getElementById('groupPointsStageSelect').addEventListener('change', loadGroupPointsOptions);
+
+  document.querySelectorAll('[data-group-points-amount]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      groupPointsAmount = Number(btn.dataset.groupPointsAmount);
+      document.getElementById('groupPointsCustomAmountInput').classList.add('hidden');
+      updateGroupPointsConfirmState();
+    });
+  });
+  const groupPointsCustomInput = document.getElementById('groupPointsCustomAmountInput');
+  function openGroupPointsCustom(sign) {
+    groupPointsCustomSign = sign;
+    groupPointsCustomInput.value = '';
+    groupPointsCustomInput.classList.remove('hidden');
+    groupPointsCustomInput.focus();
+    groupPointsAmount = null;
+    updateGroupPointsConfirmState();
+  }
+  document.getElementById('groupPointsCustomPlusBtn').addEventListener('click', () => openGroupPointsCustom(1));
+  document.getElementById('groupPointsCustomMinusBtn').addEventListener('click', () => openGroupPointsCustom(-1));
+  groupPointsCustomInput.addEventListener('input', () => {
+    groupPointsCustomInput.value = groupPointsCustomInput.value.replace(/[^0-9]/g, '');
+    const value = Number(groupPointsCustomInput.value);
+    groupPointsAmount = !value || value <= 0 ? null : groupPointsCustomSign * value;
+    updateGroupPointsConfirmState();
+  });
+
+  document.getElementById('groupPointsConfirmBtn').addEventListener('click', async () => {
+    const groups = selectedGroupPointGroups();
+    const ids = [...new Set(groups.flatMap((g) => (g.members || []).map((m) => String(m.id))))];
+    if (groupPointsAmount === null || !ids.length) return;
+    const reason = document.getElementById('groupPointsReasonInput').value.trim();
+    const btn = document.getElementById('groupPointsConfirmBtn');
+    const status = document.getElementById('groupPointsStatus');
+    if (!reason) { status.style.color = 'var(--error)'; status.textContent = 'اكتب اسم النقاط أو السبب أولًا'; return; }
+    btn.disabled = true;
+    btn.textContent = 'جاري إضافة النقاط...';
+    status.textContent = '';
+    try {
+      const result = await callAppsScript({ action: 'bulkAdjustPoints', ids, amount: groupPointsAmount, reason, supervisorName: currentSupervisorName });
+      if (!result.success) throw new Error(result.error || 'تعذر إضافة النقاط');
+      const successCount = (result.results || []).filter((x) => x.success).length;
+      status.style.color = 'var(--success)';
+      status.textContent = 'تمت إضافة النقاط إلى ' + successCount + ' طالب بنجاح';
+      groupPointsAmount = null;
+      document.getElementById('groupPointsReasonInput').value = '';
+      document.querySelectorAll('.group-points-check').forEach((x) => { x.checked = false; });
+      const all = document.getElementById('groupPointsSelectAll'); if (all) all.checked = false;
+      allStudentsCache = null;
+      updateGroupPointsConfirmState();
+      await loadGroupPointsOptions();
+    } catch (error) {
+      status.style.color = 'var(--error)';
+      status.textContent = error.message || 'تعذر إضافة النقاط';
+    } finally {
+      btn.disabled = false;
+      updateGroupPointsConfirmState();
+    }
+  });
 
   // ===== تفاصيل طالب واحد =====
   function openStudentDetail(id) {
