@@ -315,10 +315,6 @@
   .day-tab.active{background:linear-gradient(95deg,var(--rowad-purple),var(--rowad-pink));color:#fff;border-color:transparent;}
   .day-tab:disabled{opacity:.38;cursor:not-allowed;}
   .activity-details{font-size:.7rem;color:var(--text-muted);line-height:1.7;margin-top:3px;}
-  .attendance-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
-  .attendance-actions button{margin:0;padding:12px 8px;font-size:.86rem;}
-  .attendance-normal-btn{background:linear-gradient(95deg,var(--rowad-purple),#8A5CB0);}
-  .attendance-early-btn{background:linear-gradient(95deg,var(--rowad-orange),var(--rowad-pink));}
   .group-member-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #EFEAF8;}
   .group-member-row:last-child{border-bottom:none;}
   .group-member-row.me{background:#FFF0F7;margin:0 -10px;padding:11px 10px;border-radius:12px;}
@@ -487,16 +483,6 @@
       <div class="section-card" id="myGroupCard">
         <div class="section-title">👥 مجموعتي</div>
         <div id="myGroupContent"><p class="lb-empty">جاري تحميل المجموعة...</p></div>
-      </div>
-
-      <div class="section-card" id="studentAttendanceCard">
-        <div class="section-title">✅ تسجيل الحضور</div>
-        <div class="section-sub" id="studentAttendanceStatus">جاري التحقق من وقت الحضور...</div>
-        <div class="attendance-actions" id="studentAttendanceActions" style="display:none;">
-          <button type="button" class="attendance-early-btn" data-student-attendance="early">الحضور المبكر</button>
-          <button type="button" class="attendance-normal-btn" data-student-attendance="normal">الحضور العادي</button>
-        </div>
-        <p class="error" id="studentAttendanceMsg"></p>
       </div>
 
       <div class="section-card" id="achievementsLockedCard" style="display:none;">
@@ -1199,7 +1185,6 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     // loadLeaderboard();
     loadDailyTip();
     loadAchievements();
-    loadStudentAttendanceStatus();
     loadMyPointsLog();
   }
 
@@ -1226,67 +1211,6 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     document.getElementById('infoRank').textContent = data.rank ? ('#' + data.rank) : '—';
 
   }
-
-  async function loadStudentAttendanceStatus() {
-    const session = getSession();
-    if (!session) return;
-    const status = document.getElementById('studentAttendanceStatus');
-    const actions = document.getElementById('studentAttendanceActions');
-    const msg = document.getElementById('studentAttendanceMsg');
-    if (!status || !actions) return;
-    actions.style.display = 'none';
-    status.textContent = 'جاري التحقق من وقت الحضور...';
-    if (msg) msg.textContent = '';
-    try {
-      const data = await callAppsScript({ action: 'getStudentAttendanceStatus', id: session.id, password: session.pw });
-      if (!data.success) {
-        status.textContent = data.error || 'تعذر التحقق من الحضور';
-        return;
-      }
-      if (data.alreadyMarked) {
-        status.textContent = 'تم تسجيل حضورك اليوم بالفعل ✅';
-        return;
-      }
-      if (!data.allowed) {
-        status.textContent = data.reason || 'تسجيل الحضور مقفل الآن';
-        return;
-      }
-      status.textContent = 'اختر نوع حضورك — لا يمكن تغيير الاختيار بعد التسجيل';
-      actions.style.display = 'grid';
-    } catch (_) {
-      status.textContent = 'تعذر الاتصال، حاول تحديث التطبيق';
-    }
-  }
-
-  document.getElementById('studentAttendanceActions').addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-student-attendance]');
-    if (!btn) return;
-    const tier = btn.dataset.studentAttendance;
-    const label = tier === 'early' ? 'الحضور المبكر' : 'الحضور العادي';
-    if (!confirm('تأكيد تسجيل ' + label + '؟ لا يمكن تغيير الاختيار بعد التسجيل.')) return;
-    const session = getSession();
-    if (!session) return;
-    const buttons = document.querySelectorAll('[data-student-attendance]');
-    const msg = document.getElementById('studentAttendanceMsg');
-    buttons.forEach((x) => { x.disabled = true; });
-    msg.textContent = 'جاري تسجيل الحضور...';
-    try {
-      const result = await callAppsScript({ action: 'studentMarkAttendance', id: session.id, password: session.pw, tier: tier });
-      msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
-      msg.textContent = result.success ? ('✅ تم تسجيل ' + label + ' وإضافة ' + result.pointsAdded + ' نقطة') : (result.error || 'تعذر تسجيل الحضور');
-      if (result.success) {
-        document.getElementById('studentAttendanceActions').style.display = 'none';
-        document.getElementById('studentAttendanceStatus').textContent = 'تم تسجيل حضورك اليوم بالفعل ✅';
-        const refreshed = await studentLogin(session.id, session.pw);
-        if (refreshed.success) populateStudentData(refreshed);
-      }
-    } catch (_) {
-      msg.style.color = 'var(--error)';
-      msg.textContent = 'حدث خطأ في الاتصال';
-    } finally {
-      buttons.forEach((x) => { x.disabled = false; });
-    }
-  });
 
   // ====== التنقل بين الصفحات: الانزلاق يكون بنفس جهة الأيقونة المضغوطة ======
   const panels = Array.from(document.querySelectorAll('.page-panel'));
@@ -1345,11 +1269,9 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     btn.addEventListener('click', () => {
       const idx = Number(btn.dataset.index);
       goToPage(idx);
-      // تبويب "نقاطي" (index 1) يحتاج فحص الحالة من جديد كل مرة يُفتح، عشان
-      // ينعكس فورًا أي حضور سُجّل بعد ما الطالب فتح التطبيق (باركود أو يدوي)
+      // تحديث بيانات النقاط والمجموعة والسجل عند فتح صفحة النقاط
       if (idx === 1) {
         loadAchievements();
-        loadStudentAttendanceStatus();
         loadMyGroup();
         loadMyPointsLog();
       }
