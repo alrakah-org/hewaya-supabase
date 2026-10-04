@@ -3,6 +3,7 @@ declare const Deno: { env: { get(name: string): string | undefined }; serve(hand
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const REST = `${SUPABASE_URL}/rest/v1`;
+const API_VERSION = 'point-stages-20261004';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -181,19 +182,68 @@ async function registerStudent(body:any) {
   return {success:true,id:row.student_code};
 }
 
-async function pointItems(includeInactive=false) {
-  const data=await rows(`/point_items?${includeInactive?'':'active=eq.true&'}order=sort_order.asc&select=*`);
-  return data.map((x:any)=>({key:x.code,label:x.name,points:x.points_per_mark,maxChecks:x.max_marks,type:x.limit_period,active:x.active,allowedWeekdays:x.allowed_weekdays}));
+const POINT_STAGES = ['elementary_456', 'middle', 'secondary'];
+
+function pointStage(value: unknown) {
+  const stage = String(value || '');
+  if (POINT_STAGES.includes(stage)) return stage;
+  if (stage === 'ابتدائي' || stage === 'رابع+خامس+سادس') return 'elementary_456';
+  if (stage === 'متوسط') return 'middle';
+  if (stage === 'ثانوي') return 'secondary';
+  return '';
+}
+
+function pointItem(x:any) {
+  return {id:x.id,key:x.code,baseKey:x.base_code||x.code,stage:x.stage_category,
+    label:x.name,points:x.points_per_mark,maxChecks:x.max_marks,type:x.limit_period,
+    active:x.active,order:x.sort_order,allowedWeekdays:x.allowed_weekdays};
+}
+
+async function pointItems(includeInactive=false, stage:string) {
+  if (!POINT_STAGES.includes(stage)) throw new Error('Invalid point stage');
+  const filter = `${includeInactive?'':'active=eq.true&'}order=sort_order.asc&select=*`;
+  // دعم الانتقال من البنود المشتركة إلى مجموعات المراحل دون انقطاع القراءة.
+  const configured = await rows(`/point_items?stage_category=eq.${stage}&order=sort_order.asc&select=*`);
+  const data = configured.length ? configured.filter((x:any)=>includeInactive||x.active)
+    : await rows(`/point_items?stage_category=is.null&${filter}`);
+  return data.map(pointItem);
+}
+
+async function savePointItem(body:any) {
+  const item=body.item || body;
+  const stage=pointStage(body.stage || item.stage);
+  if(!stage)return {success:false,error:'اختر المرحلة أولًا'};
+  const label=String(item.label||'').trim();
+  const points=Number(item.points), maxMarks=Number(item.maxChecks);
+  if(!label||label.length>100)return {success:false,error:'أدخل اسم بند لا يتجاوز 100 حرف'};
+  if(!Number.isInteger(points)||points<1)return {success:false,error:'نقاط الدائرة يجب أن تكون عددًا صحيحًا أكبر من صفر'};
+  if(!Number.isInteger(maxMarks)||maxMarks<1||maxMarks>20)return {success:false,error:'عدد الدوائر يجب أن يكون بين 1 و20'};
+  const key=String(item.key||'');
+  const existing=key?(await rows(`/point_items?code=eq.${encodeURIComponent(key)}&stage_category=eq.${stage}&select=*`))[0]:null;
+  if(key&&!existing)return {success:false,error:'البند غير موجود في المرحلة المحددة. أعد تحميل البنود.'};
+  const code=existing?.code||`item_${crypto.randomUUID()}__${stage}`;
+  const payload={code,base_code:existing?.base_code||code,stage_category:stage,name:label,
+    points_per_mark:points,max_marks:maxMarks,limit_period:'weekly',
+    allowed_weekdays:existing?.allowed_weekdays||[0,1,2,3,4,5,6],
+    active:existing?existing.active:item.active!==false,
+    sort_order:existing?.sort_order??(Number.isInteger(Number(item.order))?Number(item.order):999)};
+  const saved=key
+    ?await db(`/point_items?id=eq.${existing.id}&stage_category=eq.${stage}`,{method:'PATCH',body:JSON.stringify(payload)})
+    :await db('/point_items',{method:'POST',body:JSON.stringify(payload)});
+  if(!saved?.[0])return {success:false,error:'لم يُحفظ البند. أعد المحاولة.'};
+  return {success:true,key:code,stage,item:pointItem(saved[0])};
 }
 
 async function getDayContext(body:any) {
   const sid=await verifyStudent(body); if(!sid) return {success:false,error:'انتهت الجلسة، سجل الدخول مجددًا'};
   const wi=weekInfo();
   const open=!(wi.day===0&&wi.minutes<900); if(!open) return {success:false,error:'تفتح صفحة النقاط يوم الأحد الساعة 3:00 عصرًا'};
-  const s=(await rows(`/students?id=eq.${sid}&select=id,student_code`))[0];
-  const items=await pointItems(false);
-  const awards=await rows(`/point_awards?student_id=eq.${sid}&week_number=eq.${wi.number}&select=quantity,point_items(code)`);
-  const counts:Record<string,number>={}; awards.forEach((a:any)=>{const c=a.point_items?.code;if(c)counts[c]=(counts[c]||0)+Number(a.quantity||0)});
+  const s=(await rows(`/students?id=eq.${sid}&select=id,student_code,grade`))[0];
+  if(!s)return {success:false,error:'الطالب غير موجود'};
+  const stage=stageCategory(s.grade);
+  const items=await pointItems(false,stage);
+  const awards=await rows(`/point_awards?student_id=eq.${sid}&week_number=eq.${wi.number}&select=quantity,point_items(code,base_code)`);
+  const counts:Record<string,number>={}; awards.forEach((a:any)=>{const c=a.point_items?.base_code||a.point_items?.code;if(c)counts[c]=(counts[c]||0)+Number(a.quantity||0)});
   const allowed=items.filter((x:any)=>!x.allowedWeekdays?.length||x.allowedWeekdays.includes(wi.day));
   const gm=(await rows(`/group_memberships?student_id=eq.${sid}&left_at=is.null&select=group_id`))[0];
   let groupActivity:any[]=[];
@@ -209,21 +259,32 @@ async function getDayContext(body:any) {
     }
     groupActivity.sort((a,b)=>b.score-a.score);
   }
-  return {success:true,weekLabel:wi.label,selectedDay:{key:wi.date,label:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][wi.day],date:wi.date},days:[{key:wi.date,label:'اليوم',enabled:true}],items:allowed.map((x:any)=>({...x,count:counts[x.key]||0})),groupActivity};
+  return {success:true,stage,weekLabel:wi.label,selectedDay:{key:wi.date,label:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][wi.day],date:wi.date},days:[{key:wi.date,label:'اليوم',enabled:true}],items:allowed.map((x:any)=>({...x,count:counts[x.baseKey]||0})),groupActivity};
 }
 
 async function saveDayPoints(body:any) {
   const sid=await verifyStudent(body); if(!sid)return {success:false,error:'بيانات الدخول غير صحيحة'};
   const wi=weekInfo(); if(wi.day===0&&wi.minutes<900)return {success:false,error:'التسجيل لم يفتح بعد'};
-  const items=await pointItems(false); const requested=body.counts||{};
+  const student=(await rows(`/students?id=eq.${sid}&select=grade`))[0];
+  if(!student)return {success:false,error:'الطالب غير موجود'};
+  const stage=stageCategory(student.grade);
+  const items=await pointItems(false,stage); const requested=body.counts||{};
+  const validKeys=new Set(items.flatMap((x:any)=>[x.key,x.baseKey]));
+  if(Object.values(requested).some(value=>!Number.isInteger(Number(value))||Number(value)<0))
+    return {success:false,error:'عدد الدوائر غير صحيح'};
+  if(Object.keys(requested).some(key=>!validKeys.has(key)&&Number(requested[key])>0))
+    return {success:false,error:'تغيرت بنود مرحلتك. أعد تحميل صفحة النقاط.'};
+  const previous=await rows(`/point_awards?student_id=eq.${sid}&week_number=eq.${wi.number}&select=quantity,point_items(code,base_code)`);
   for(const item of items){
-    if(!(item.key in requested))continue;
-    const prevRows=await rows(`/point_awards?student_id=eq.${sid}&point_item_id=in.(${encodeURIComponent((await rows(`/point_items?code=eq.${encodeURIComponent(item.key)}&select=id`))[0]?.id||'')})&week_number=eq.${wi.number}&select=quantity`);
-    const prev=prevRows.reduce((n:number,x:any)=>n+Number(x.quantity||0),0); const wanted=Math.min(Number(item.maxChecks),Math.max(prev,Number(requested[item.key]||0)));
+    const requestedKey=item.key in requested?item.key:item.baseKey;
+    if(!(requestedKey in requested))continue;
+    const count=Number(requested[requestedKey]);
+    if(!Number.isInteger(count)||count<0)return {success:false,error:'عدد الدوائر غير صحيح'};
+    const prev=previous.filter((x:any)=>(x.point_items?.base_code||x.point_items?.code)===item.baseKey).reduce((n:number,x:any)=>n+Number(x.quantity||0),0);
+    const wanted=Math.min(Number(item.maxChecks),Math.max(prev,count));
     const delta=wanted-prev; if(delta<=0)continue;
     if(item.allowedWeekdays?.length&&!item.allowedWeekdays.includes(wi.day))continue;
-    const pi=(await rows(`/point_items?code=eq.${encodeURIComponent(item.key)}&select=id,points_per_mark`))[0];
-    await db('/point_awards',{method:'POST',body:JSON.stringify({student_id:sid,point_item_id:pi.id,activity_date:wi.date,week_number:wi.number,quantity:delta,unit_points:pi.points_per_mark,source:'student',note:null})});
+    await db('/point_awards',{method:'POST',body:JSON.stringify({student_id:sid,point_item_id:item.id,activity_date:wi.date,week_number:wi.number,quantity:delta,unit_points:item.points,source:'student',note:null})});
   }
   return {success:true,modifiedOtherDay:false};
 }
@@ -280,6 +341,7 @@ Deno.serve(async (req) => {
   if(req.method!=='POST')return json({success:false,error:'POST only'},405);
   try{
     const body=await req.json(); const action=String(body.action||'');
+    if(action==='getAppVersion')return json({success:true,version:API_VERSION,pointStages:POINT_STAGES});
     if(action==='supervisorLogin')return json(await supervisorLogin(body));
     if(action==='studentLogin')return json(await studentLogin(body));
     if(action==='getAnnouncements')return json(await announcements());
@@ -374,12 +436,19 @@ Deno.serve(async (req) => {
       const columns=body.mode==='individuals'?[{id:'individuals',name:'ترتيب الأفراد',totalPoints:withDetails.flatMap((g:any)=>g.members).reduce((n:number,s:any)=>n+Number(s.balance||0),0),members:withDetails.flatMap((g:any)=>g.members).sort((a:any,b:any)=>b.balance-a.balance||String(a.name).localeCompare(String(b.name),'ar'))}]:withDetails;
       return json({success:true,columns,weekNumber:requestedWeek});
     }
-    if(action==='getAchievementItems')return json({success:true,items:await pointItems(!!body.includeInactive)});
-    if(action==='saveAchievementItem'){
-      const payload={code:body.key||String(body.label||'').replace(/\s+/g,'_')+'_'+Date.now(),name:body.label,points_per_mark:Number(body.points),max_marks:Math.min(100,Number(body.maxChecks||1)),limit_period:'weekly',allowed_weekdays:[0,1,2,3,4,5,6],active:true};
-      if(body.key)await db(`/point_items?code=eq.${encodeURIComponent(body.key)}`,{method:'PATCH',body:JSON.stringify(payload)});else await db('/point_items',{method:'POST',body:JSON.stringify(payload)});return json({success:true});
+    if(action==='getAchievementItems'){
+      const stage=pointStage(body.stage);
+      if(!stage)return json({success:false,error:'اختر المرحلة أولًا'},400);
+      return json({success:true,stage,items:await pointItems(body.includeInactive===true||body.includeInactive==='true',stage)});
     }
-    if(action==='toggleAchievementItem'){await db(`/point_items?code=eq.${encodeURIComponent(body.key)}`,{method:'PATCH',body:JSON.stringify({active:!!body.active})});return json({success:true});}
+    if(action==='saveAchievementItem')return json(await savePointItem(body));
+    if(action==='toggleAchievementItem'){
+      const stage=pointStage(body.stage);
+      if(!stage)return json({success:false,error:'اختر المرحلة أولًا'},400);
+      const saved=await db(`/point_items?code=eq.${encodeURIComponent(String(body.key))}&stage_category=eq.${stage}`,{method:'PATCH',body:JSON.stringify({active:body.active===true||body.active==='true'})});
+      if(!saved?.[0])return json({success:false,error:'البند غير موجود في المرحلة المحددة'});
+      return json({success:true,stage,item:pointItem(saved[0])});
+    }
     if(['getRewards','getPurchaseRequests'].includes(action))return json({success:true,rewards:[],requests:[]});
     return json({success:false,error:`إجراء غير معروف: ${action}`},400);
   }catch(error){console.error(error);return json({success:false,error:'حدث خطأ في الخادم'},500);}

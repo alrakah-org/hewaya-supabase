@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <meta name="hawaya-version" content="point-stages-20261004">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>مشرف هواية</title>
@@ -793,17 +794,26 @@
       <div class="card">
         <div class="section-title">⚙️ إدارة بنود النقاط</div>
         <div class="section-sub">أضف بندًا أو عدّل اسمه ونقاطه وعدد دوائره الأسبوعية (الحد الأقصى 20)</div>
-        <button type="button" id="showAchievementItemFormBtn">➕ إضافة بند</button>
+        <label>المرحلة
+          <select id="achievementStageSelect">
+            <option value="">اختر المرحلة أولًا</option>
+            <option value="elementary_456">الابتدائي</option>
+            <option value="middle">المتوسط</option>
+            <option value="secondary">الثانوي</option>
+          </select>
+        </label>
+        <p id="achievementStageNotice" role="status">اختر المرحلة لعرض بنودها وتعديلها.</p>
+        <button type="button" id="showAchievementItemFormBtn" disabled>➕ إضافة بند</button>
         <div id="achievementItemForm" class="hidden">
         <input type="hidden" id="achievementItemKey">
         <label>اسم البند<input id="achievementItemLabel" type="text" placeholder="مثال: الكرم"></label>
-        <label>نقاط كل دائرة<input id="achievementItemPoints" type="number" inputmode="numeric" min="0" placeholder="مثال: 300"></label>
+        <label>نقاط كل دائرة<input id="achievementItemPoints" type="number" inputmode="numeric" min="1" step="1" placeholder="مثال: 300"></label>
         <label>عدد الدوائر طوال الأسبوع<input id="achievementItemMaxChecks" type="number" inputmode="numeric" min="1" max="20" value="1"></label>
         <select id="achievementItemType" class="hidden"><option value="weekly" selected>أسبوعي</option></select>
         <button type="button" id="saveAchievementItemBtn">💾 حفظ البند</button>
         <button type="button" id="cancelAchievementItemEditBtn" class="btn-secondary hidden">إلغاء التعديل</button>
-        <p class="error" id="achievementItemMsg"></p>
         </div>
+        <p class="error" id="achievementItemMsg" role="status" aria-live="polite"></p>
       </div>
       <div class="card"><div class="section-title">📋 البنود الحالية</div><div id="achievementItemsList"></div></div>
     </div>
@@ -2931,8 +2941,18 @@
   loadRankingGroupOptions();
   loadRankingWeeks();
 
-  /* ==================== إدارة بنود النقاط ==================== */
+  /* ==================== إدارة بنود النقاط حسب المرحلة ==================== */
   let achievementItemsAdminCache = [];
+  let achievementItemsLoadId = 0;
+  const achievementStageSelect = document.getElementById('achievementStageSelect');
+  const achievementStageNames = { elementary_456: 'الابتدائي', middle: 'المتوسط', secondary: 'الثانوي' };
+  const escapePointText = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function achievementMessage(text, success = false) {
+    const msg = document.getElementById('achievementItemMsg');
+    msg.style.color = success ? 'var(--success)' : 'var(--error)';
+    msg.textContent = text;
+  }
 
   function resetAchievementItemForm() {
     document.getElementById('achievementItemKey').value = '';
@@ -2940,89 +2960,117 @@
     document.getElementById('achievementItemPoints').value = '';
     document.getElementById('achievementItemMaxChecks').value = '1';
     document.getElementById('achievementItemType').value = 'weekly';
-    document.getElementById('achievementItemMaxChecks').disabled = false;
     document.getElementById('cancelAchievementItemEditBtn').classList.add('hidden');
     document.getElementById('achievementItemForm').classList.add('hidden');
   }
 
   async function loadAchievementItemsAdmin() {
     const wrap = document.getElementById('achievementItemsList');
-    wrap.innerHTML = '<p class="list-empty">جاري تحميل البنود...</p>';
-    const data = await callAppsScript({ action: 'getAchievementItems', includeInactive: true });
-    achievementItemsAdminCache = data.success ? (data.items || []) : [];
-    if (!achievementItemsAdminCache.length) {
-      wrap.innerHTML = '<p class="list-empty">لا توجد بنود حتى الآن</p>';
-      return;
+    const stage = achievementStageSelect.value;
+    const loadId = ++achievementItemsLoadId;
+    achievementItemsAdminCache = [];
+    document.getElementById('showAchievementItemFormBtn').disabled = true;
+    if (!stage) {
+      wrap.innerHTML = '<p class="list-empty">اختر المرحلة لعرض بنودها</p>';
+      return false;
     }
-    wrap.innerHTML = achievementItemsAdminCache.map((item) => `<div class="list-item" style="opacity:${item.active ? 1 : .58}">
-      <div style="flex:1;"><div class="list-item-title">${item.label}</div><div class="list-item-sub">أسبوعي — ${item.points} نقطة للدائرة — ${item.maxChecks} ${item.maxChecks === 1 ? 'دائرة' : 'دوائر'}</div></div>
-      <div class="list-item-actions">
-        <button type="button" class="icon-btn" data-edit-achievement="${item.key}" aria-label="تعديل">✏️</button>
-        <button type="button" class="icon-btn" data-toggle-achievement="${item.key}" data-active="${!item.active}" aria-label="${item.active ? 'تعطيل' : 'تفعيل'}">${item.active ? '⏸️' : '▶️'}</button>
-      </div>
-    </div>`).join('');
+    wrap.innerHTML = '<p class="list-empty">جاري تحميل بنود المرحلة...</p>';
+    try {
+      const data = await callAppsScript({ action: 'getAchievementItems', stage, includeInactive: true });
+      if (loadId !== achievementItemsLoadId || stage !== achievementStageSelect.value) return false;
+      if (!data.success || data.stage !== stage || !Array.isArray(data.items)) throw new Error(data.error || 'تعذر تحميل بنود المرحلة');
+      achievementItemsAdminCache = data.items;
+      document.getElementById('showAchievementItemFormBtn').disabled = false;
+      wrap.innerHTML = achievementItemsAdminCache.length ? achievementItemsAdminCache.map((item) => `<div class="list-item" style="opacity:${item.active ? 1 : .58}">
+        <div style="flex:1;"><div class="list-item-title">${escapePointText(item.label)}</div><div class="list-item-sub">أسبوعي — ${Number(item.points)} نقطة للدائرة — ${Number(item.maxChecks)} ${item.maxChecks === 1 ? 'دائرة' : 'دوائر'}</div></div>
+        <div class="list-item-actions">
+          <button type="button" class="icon-btn" data-edit-achievement="${escapePointText(item.key)}" aria-label="تعديل">✏️</button>
+          <button type="button" class="icon-btn" data-toggle-achievement="${escapePointText(item.key)}" data-active="${!item.active}" aria-label="${item.active ? 'تعطيل' : 'تفعيل'}">${item.active ? '⏸️' : '▶️'}</button>
+        </div>
+      </div>`).join('') : '<p class="list-empty">لا توجد بنود لهذه المرحلة. يمكنك إضافة بند جديد.</p>';
+      return true;
+    } catch (error) {
+      if (loadId !== achievementItemsLoadId) return false;
+      wrap.innerHTML = '<p class="list-empty">تعذر تحميل البنود. اختر المرحلة مرة أخرى للمحاولة.</p>';
+      achievementMessage(error.message || 'تعذر الاتصال');
+      return false;
+    }
   }
 
-  document.getElementById('achievementItemType').addEventListener('change', (e) => {
-    document.getElementById('achievementItemMaxChecks').disabled = false;
+  achievementStageSelect.addEventListener('change', () => {
+    resetAchievementItemForm();
+    achievementMessage('');
+    document.getElementById('achievementStageNotice').textContent = achievementStageSelect.value
+      ? `تعديل البنود هنا يخص مرحلة ${achievementStageNames[achievementStageSelect.value]} فقط.`
+      : 'اختر المرحلة لعرض بنودها وتعديلها.';
+    loadAchievementItemsAdmin();
   });
 
   document.getElementById('achievementItemsList').addEventListener('click', async (e) => {
+    if (achievementStageSelect.disabled || !achievementStageSelect.value) return;
     const editBtn = e.target.closest('[data-edit-achievement]');
     const toggleBtn = e.target.closest('[data-toggle-achievement]');
     if (editBtn) {
       const item = achievementItemsAdminCache.find((x) => x.key === editBtn.dataset.editAchievement);
       if (!item) return;
+      achievementMessage('');
       document.getElementById('achievementItemKey').value = item.key;
       document.getElementById('achievementItemLabel').value = item.label;
       document.getElementById('achievementItemPoints').value = item.points;
       document.getElementById('achievementItemMaxChecks').value = item.maxChecks;
-      document.getElementById('achievementItemType').value = item.type;
-      document.getElementById('achievementItemMaxChecks').disabled = false;
       document.getElementById('cancelAchievementItemEditBtn').classList.remove('hidden');
       document.getElementById('achievementItemForm').classList.remove('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     if (toggleBtn) {
+      const stage = achievementStageSelect.value;
       toggleBtn.disabled = true;
-      await callAppsScript({ action: 'toggleAchievementItem', key: toggleBtn.dataset.toggleAchievement, active: toggleBtn.dataset.active === 'true' });
-      await loadAchievementItemsAdmin();
+      achievementStageSelect.disabled = true;
+      try {
+        const result = await callAppsScript({ action: 'toggleAchievementItem', stage, key: toggleBtn.dataset.toggleAchievement, active: toggleBtn.dataset.active === 'true' });
+        if (!result.success) throw new Error(result.error || 'تعذر تغيير حالة البند');
+        resetAchievementItemForm();
+        const loaded = await loadAchievementItemsAdmin();
+        if (loaded) achievementMessage('تم تحديث حالة البند لهذه المرحلة.', true);
+      } catch (error) { achievementMessage(error.message || 'تعذر الاتصال'); }
+      finally { achievementStageSelect.disabled = false; toggleBtn.disabled = false; }
     }
   });
 
   document.getElementById('cancelAchievementItemEditBtn').addEventListener('click', resetAchievementItemForm);
   document.getElementById('showAchievementItemFormBtn').addEventListener('click', () => {
+    if (!achievementStageSelect.value) return;
     resetAchievementItemForm();
+    achievementMessage('');
     document.getElementById('achievementItemForm').classList.remove('hidden');
   });
   document.getElementById('saveAchievementItemBtn').addEventListener('click', async () => {
+    const stage = achievementStageSelect.value;
+    if (!stage) { achievementMessage('اختر المرحلة أولًا'); return; }
     const btn = document.getElementById('saveAchievementItemBtn');
-    const msg = document.getElementById('achievementItemMsg');
-    const type = document.getElementById('achievementItemType').value;
     const current = achievementItemsAdminCache.find((x) => x.key === document.getElementById('achievementItemKey').value);
-    const labelValue = document.getElementById('achievementItemLabel').value.trim();
-    const pointsValue = document.getElementById('achievementItemPoints').value;
-    if (!labelValue || pointsValue === '' || Number(pointsValue) < 0) {
-      msg.style.color = 'var(--error)';
-      msg.textContent = !labelValue ? 'اسم البند مطلوب' : 'أدخل عدد نقاط صحيح';
-      return;
-    }
-    const item = {
-      key: document.getElementById('achievementItemKey').value,
-      label: labelValue,
-      points: Number(pointsValue),
-      maxChecks: Number(document.getElementById('achievementItemMaxChecks').value),
-      type: 'weekly',
-      active: current ? current.active : true,
-      order: current ? current.order : achievementItemsAdminCache.length + 1
-    };
-    btn.disabled = true; msg.textContent = '';
+    const label = document.getElementById('achievementItemLabel').value.trim();
+    const rawPoints = document.getElementById('achievementItemPoints').value;
+    const points = Number(rawPoints);
+    const maxChecks = Number(document.getElementById('achievementItemMaxChecks').value);
+    if (!label || label.length > 100) { achievementMessage('أدخل اسم بند لا يتجاوز 100 حرف'); return; }
+    if (rawPoints === '' || !Number.isInteger(points) || points < 1) { achievementMessage('أدخل عدد نقاط صحيح أكبر من صفر'); return; }
+    if (!Number.isInteger(maxChecks) || maxChecks < 1 || maxChecks > 20) { achievementMessage('عدد الدوائر يجب أن يكون بين 1 و20'); return; }
+    const item = { key: document.getElementById('achievementItemKey').value, stage, label, points, maxChecks, type: 'weekly', active: current ? current.active : true, order: current ? current.order : (Math.max(0, ...achievementItemsAdminCache.map(x => Number(x.order) || 0)) + 10) };
+    btn.disabled = true;
+    achievementStageSelect.disabled = true;
+    document.getElementById('showAchievementItemFormBtn').disabled = true;
+    achievementMessage('جاري حفظ البند...');
     try {
-      const result = await callAppsScript({ action: 'saveAchievementItem', item: item });
-      msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
-      msg.textContent = result.success ? '✅ تم حفظ البند' : (result.error || 'تعذر حفظ البند');
-      if (result.success) { resetAchievementItemForm(); await loadAchievementItemsAdmin(); }
-    } finally { btn.disabled = false; }
+      const result = await callAppsScript({ action: 'saveAchievementItem', stage, item });
+      if (!result.success) throw new Error(result.error || 'تعذر حفظ البند');
+      const loaded = await loadAchievementItemsAdmin();
+      const saved = loaded && achievementItemsAdminCache.find(x => x.key === (result.item?.key || result.key || item.key));
+      if (!saved || saved.label !== label || Number(saved.points) !== points || Number(saved.maxChecks) !== maxChecks) throw new Error('لم يظهر التعديل بعد الحفظ. أعد تحميل البنود وحاول مرة أخرى.');
+      resetAchievementItemForm();
+      achievementMessage(`تم حفظ البند لمرحلة ${achievementStageNames[stage]}.`, true);
+    } catch (error) { achievementMessage(error.message || 'تعذر الاتصال'); }
+    finally { btn.disabled = false; achievementStageSelect.disabled = false; }
   });
 
   // ترتيب صفحة الإعلانات: النصيحة الحالية، ثم الإعلانات الحالية، ثم الإضافة.
