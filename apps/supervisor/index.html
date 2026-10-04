@@ -332,6 +332,17 @@
 .social-compose textarea{font-family:inherit;font-size:12px;min-height:62px;padding:10px;border-radius:13px;margin:0}
 .social-compose button{font-size:12px;padding:10px 15px;border-radius:13px}
 .social-empty{padding:35px 8px;font-size:12px}
+</style><style>
+.social-selectors{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:13px 0 16px}
+.social-selectors label{min-width:0}.social-selectors select{width:100%;background:#f0e9f7;color:#4c2871;border:1px solid #e6daef;border-radius:20px!important}
+#socialForm:not(.is-chat){background:radial-gradient(ellipse at 100% 100%,#fceef7 0,transparent 35%),#fff;border:1px solid #efcde4;border-radius:20px;padding:15px 13px 12px;margin:10px 0 18px;box-shadow:0 5px 18px #ad629312}
+#socialForm:not(.is-chat) #socialComposeLabel{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#socialForm:not(.is-chat) .social-compose{display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:center}
+.social-compose-avatar{width:48px;height:48px;border-radius:50%;background:#fbe0f0;display:grid;place-items:center}
+#socialForm:not(.is-chat) #socialText{width:100%;min-height:70px;padding:17px 12px;border:1px solid #e7deeb;border-radius:18px;background:radial-gradient(ellipse at 0 100%,#fff0f7,transparent 45%),#fff;font-size:13px}
+#socialForm:not(.is-chat) #socialSend{grid-column:2;justify-self:end;min-width:84px;padding:10px 22px;border-radius:24px;background:linear-gradient(100deg,#7e32a6,#a344b7);font-size:14px}
+#socialForm.is-chat .social-compose-avatar{display:none}
+#socialForm.is-chat{margin-top:12px}
 </style></head>
 <body>
 
@@ -389,12 +400,12 @@
 <div class="card" style="background:linear-gradient(135deg,#fffaf7,#fff0f7)">
 <div class="social-head"><h2>تغريدات هواية</h2><button id="socialGear" class="social-gear hidden" aria-label="إعدادات المرحلة">⚙</button></div>
 <p class="social-note">تجربة المشرفين — التغريدات محفوظة ومشتركة بين جميع المراحل.</p>
-<label>المرحلة<select id="socialStage"><option value="">اختر المرحلة أولًا</option><option>رابع+خامس+سادس</option><option>متوسط</option><option>ثانوي</option></select></label>
+<div class="social-selectors"><label>المرحلة<select id="socialStage"><option value="">اختر المرحلة أولًا</option><option>رابع+خامس+سادس</option><option>متوسط</option><option>ثانوي</option></select></label><label id="socialGroupWrap">المجموعة<select id="socialGroup"><option value="">تغريدات المرحلة</option></select></label></div>
 <div id="socialSettings" class="hidden"><label style="display:flex;gap:10px;align-items:center"><input id="socialEnabled" type="checkbox" checked style="width:20px;margin:0">تفعيل تغريدات هذه المرحلة <small>(معاينة)</small></label></div>
-<div id="socialContent" class="hidden"><div class="social-tabs"><button class="active" id="socialTweets">تغريدات المرحلة</button><button id="socialChats">محادثات المجموعات</button></div>
-<label id="socialGroupWrap" class="hidden">المجموعة<select id="socialGroup"><option value="">اختر المجموعة</option></select></label>
+<div id="socialContent" class="hidden"><div class="social-tabs hidden"><button class="active" id="socialTweets">تغريدات المرحلة</button><button id="socialChats">محادثات المجموعات</button></div>
+
 <div id="socialFeed" class="social-feed"></div>
-<form id="socialForm"><label id="socialComposeLabel" for="socialText">تغريدة جديدة</label><div class="social-compose"><textarea id="socialText" maxlength="500" placeholder="وش حاب تشارك اليوم؟"></textarea><button id="socialSend">نشر</button></div><p id="socialStatus" class="social-note" aria-live="polite"></p></form></div>
+<form id="socialForm"><label id="socialComposeLabel" for="socialText">تغريدة جديدة</label><div class="social-compose"><span class="social-compose-avatar" aria-label="حساب المشرف"><svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true"><circle cx="24" cy="17" r="9" fill="#8e52ae"/><path d="M8 43c0-11 7-17 16-17s16 6 16 17" fill="#8e52ae"/></svg></span><textarea id="socialText" maxlength="500" placeholder="وش حاب تشارك اليوم؟"></textarea><button id="socialSend">نشر</button></div><p id="socialStatus" class="social-note" aria-live="polite"></p></form></div>
 <div id="socialWelcome" class="social-empty">اختر المرحلة لعرض تغريداتها<br>ومحادثات مجموعاتها</div>
 </div></div><div class="page-panel" data-page="3">
       <div class="card">
@@ -3116,7 +3127,7 @@ const key=()=>mode+'|'+(mode==='chat'?el('socialGroup').value:'');
 function render(){
 const stage=el('socialStage').value, chat=mode==='chat', selected=el('socialGroup').value;
 el('socialGear').classList.toggle('hidden',!stage);el('socialContent').classList.toggle('hidden',!stage);el('socialWelcome').classList.toggle('hidden',!!stage);
-el('socialGroupWrap').classList.toggle('hidden',!chat);el('socialTweets').classList.toggle('active',!chat);el('socialChats').classList.toggle('active',chat);
+el('socialGroup').disabled=!stage;el('socialForm').classList.toggle('is-chat',chat);el('socialTweets').classList.toggle('active',!chat);el('socialChats').classList.toggle('active',chat);
 const feed=el('socialFeed'), form=el('socialForm');
 if(chat)feed.after(form);else feed.before(form);
 el('socialComposeLabel').textContent=chat?'رسالة للمجموعة':'تغريدة جديدة';el('socialSend').textContent=chat?'إرسال':'نشر';el('socialText').placeholder=chat?'اكتب رسالتك للمجموعة…':'وش حاب تشارك اليوم؟';
@@ -3126,17 +3137,17 @@ const list=messages.get(key())||[];
 el('socialFeed').innerHTML=!active?'<div class="social-empty">التغريدات معطلة لهذه المرحلة في المعاينة</div>':chat&&!selected?'<div class="social-empty">اختر مجموعة لفتح محادثتها</div>':!list.length?'<div class="social-empty">'+(chat?'بداية محادثة المجموعة التجريبية':'لا توجد تغريدات للمشرفين بعد')+'<br>جرّب كتابة '+(chat?'رسالة':'تغريدة')+' لرؤية شكلها</div>':list.map(m=>'<article class="social-post"><div class="social-author"><span class="social-avatar">♙</span><strong>'+escape(m.name)+'</strong><span class="social-badge">✓ مشرف</span></div><p style="white-space:pre-wrap">'+escape(m.text)+'</p><div class="social-meta"><span>تجربة المشرفين</span><button type="button" class="social-delete" data-social-delete="'+m.id+'">حذف</button></div></article>').join('');
 }
 el('socialStage').onchange=async()=>{
-const stage=el('socialStage').value, token=++request;el('socialSettings').classList.add('hidden');el('socialText').value='';el('socialStatus').textContent='';
+mode='tweets';const stage=el('socialStage').value, token=++request;el('socialSettings').classList.add('hidden');el('socialText').value='';el('socialStatus').textContent='';
 el('socialGroup').innerHTML='<option value="">جاري تحميل المجموعات…</option>';render();if(!stage)return;
 try{const data=await callAppsScript({action:'getGroups',stage});if(token!==request)return;if(!data.success)throw Error(data.message||'تعذر تحميل المجموعات');
-el('socialGroup').innerHTML='<option value="">اختر المجموعة</option>'+(data.groups||[]).map(g=>'<option value="'+escape(g.id)+'">'+escape(g.name)+'</option>').join('');
+el('socialGroup').innerHTML='<option value="">تغريدات المرحلة</option>'+(data.groups||[]).map(g=>'<option value="'+escape(g.id)+'">'+escape(g.name)+'</option>').join('');
 if(!(data.groups||[]).length)el('socialGroup').innerHTML='<option value="">لا توجد مجموعات في المرحلة</option>';
 }catch(e){if(token===request){el('socialGroup').innerHTML='<option value="">تعذر تحميل المجموعات</option>';el('socialStatus').textContent='تعذر تحميل المجموعات. أعد اختيار المرحلة للمحاولة.';}}
 render();
 };
 el('socialGear').onclick=()=>el('socialSettings').classList.toggle('hidden');
 el('socialEnabled').onchange=()=>{enabled.set(el('socialStage').value,el('socialEnabled').checked);render();};
-el('socialTweets').onclick=()=>{mode='tweets';render();};el('socialChats').onclick=()=>{mode='chat';render();};el('socialGroup').onchange=()=>{el('socialText').value='';render();};
+el('socialTweets').onclick=()=>{mode='tweets';render();};el('socialChats').onclick=()=>{mode='chat';render();};el('socialGroup').onchange=()=>{mode=el('socialGroup').value?'chat':'tweets';el('socialText').value='';render();};
 
 let loadingToken=0,busy=false;
 async function sync(action='getSupervisorPreview',extra={}){
