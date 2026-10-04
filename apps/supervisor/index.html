@@ -3117,6 +3117,8 @@ function render(){
 const stage=el('socialStage').value, chat=mode==='chat', selected=el('socialGroup').value;
 el('socialGear').classList.toggle('hidden',!stage);el('socialContent').classList.toggle('hidden',!stage);el('socialWelcome').classList.toggle('hidden',!!stage);
 el('socialGroupWrap').classList.toggle('hidden',!chat);el('socialTweets').classList.toggle('active',!chat);el('socialChats').classList.toggle('active',chat);
+const feed=el('socialFeed'), form=el('socialForm');
+if(chat)feed.after(form);else feed.before(form);
 el('socialComposeLabel').textContent=chat?'رسالة للمجموعة':'تغريدة جديدة';el('socialSend').textContent=chat?'إرسال':'نشر';el('socialText').placeholder=chat?'اكتب رسالتك للمجموعة…':'وش حاب تشارك اليوم؟';
 const active=enabled.get(stage)!==false;el('socialEnabled').checked=active;
 el('socialForm').classList.toggle('hidden',!active||(chat&&!selected));el('socialFeed').classList.toggle('social-chat',chat);
