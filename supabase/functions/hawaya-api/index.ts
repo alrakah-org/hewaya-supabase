@@ -375,6 +375,29 @@ Deno.serve(async (req) => {
     }
 
     const supervisor=await requireSupervisor(req); if(!supervisor)return json({success:false,error:'انتهت جلسة المشرف، سجل الدخول مجددًا'},401);
+
+    if(['getSupervisorPreview','postSupervisorPreview','deleteSupervisorPreview'].includes(action)){
+      const channel=body.channel==='chat'?'chat':'tweets';
+      const gid=String(body.groupId||'');
+      if(channel==='chat'){
+        if(!/^[0-9a-f-]{36}$/i.test(gid))return json({success:false,error:'اختر المجموعة'},400);
+        if(!(await rows(`/groups?id=eq.${gid}&active=eq.true&select=id`))[0])return json({success:false,error:'المجموعة غير موجودة'},400);
+      }
+      const filter=`channel=eq.${channel}&group_id=${channel==='chat'?'eq.'+gid:'is.null'}`;
+      if(action==='postSupervisorPreview'){
+        const text=String(body.text||'').trim();
+        if(!text||text.length>500)return json({success:false,error:'اكتب نصًا من 1 إلى 500 حرف'},400);
+        await db('/supervisor_social_preview',{method:'POST',body:JSON.stringify({channel,group_id:channel==='chat'?gid:null,author_name:supervisor.supervisor_name,body:text})});
+      }
+      if(action==='deleteSupervisorPreview'){
+        const id=String(body.messageId||'');
+        if(!/^[0-9a-f-]{36}$/i.test(id))return json({success:false,error:'رسالة غير صالحة'},400);
+        await db(`/supervisor_social_preview?id=eq.${id}&${filter}`,{method:'DELETE'});
+      }
+      const items=await rows(`/supervisor_social_preview?${filter}&order=created_at.desc,id.desc&limit=100&select=id,author_name,body,created_at`);
+      if(channel==='chat')items.reverse();
+      return json({success:true,messages:items.map((m:any)=>({id:m.id,name:m.author_name,text:m.body,createdAt:m.created_at}))});
+    }
     if(action==='generatePreview'){
       let id=''; do{id=String(Math.floor(100000+Math.random()*900000));}while((await rows(`/students?student_code=eq.${id}&select=id`))[0]);
       const password=String(Math.floor(1000+Math.random()*9000)); return json({success:true,id,password,name:body.name,stage:body.stage,imageUrl:body.imageUrl||''});

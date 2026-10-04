@@ -317,6 +317,21 @@
 </style>
 <style>
 .social-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.social-head h2{margin:0;color:var(--indigo);font-family:'Baloo Bhaijaan 2';font-size:1.7rem}.social-gear{width:44px;margin:0;padding:10px;box-shadow:none;background:#eee8f7;color:var(--indigo)}.social-tabs{display:flex;gap:8px;margin:18px 0}.social-tabs button{margin:0;background:#eee8f7;color:var(--indigo);box-shadow:none}.social-tabs button.active{background:linear-gradient(110deg,#7b39ab,#b453c4);color:white}.social-note{font-size:.78rem;color:var(--text-muted);line-height:1.7}.social-feed{min-height:260px}.social-post{background:#fff;border:1px solid #f0dcee;border-radius:22px;padding:18px;margin:12px 0}.social-author{display:flex;gap:10px;align-items:center;color:var(--indigo)}.social-avatar{width:42px;height:42px;border-radius:50%;background:#f2e5fa;display:grid;place-items:center;font-size:1.3rem}.social-badge{font-size:.7rem;color:var(--blue)}.social-post p{line-height:1.9}.social-meta{display:flex;justify-content:space-between;color:var(--text-muted);font-size:.75rem}.social-delete{width:auto;padding:0;margin:0;background:none;box-shadow:none;color:var(--error);font-size:.75rem}.social-chat .social-post{max-width:88%;border-radius:20px 20px 4px 20px;background:#f4ebfb}.social-compose{display:flex;gap:8px;align-items:end}.social-compose textarea{flex:1;min-width:0;resize:vertical;min-height:85px}.social-compose button{width:auto;margin:0;padding:13px 20px}.social-empty{text-align:center;padding:65px 10px;color:var(--text-muted);line-height:1.9}
+</style><style>
+.page-panel[data-page="7"]{font-size:13px}
+.page-panel[data-page="7"]>.card{padding:14px 13px 18px;border-radius:18px}
+.page-panel[data-page="7"] label{font-size:12px;margin-bottom:8px}
+.page-panel[data-page="7"] select{font-size:12px;padding:9px 10px;min-height:38px;margin-top:5px;border-radius:12px}
+.social-head h2{font-size:1.3rem}.social-gear{width:34px;padding:7px;font-size:16px}
+.social-note{font-size:10px;margin:7px 0;line-height:1.6}
+.social-tabs{gap:6px;margin:12px 0}.social-tabs button{padding:10px 7px;font-size:12px;border-radius:12px}
+.social-feed{min-height:140px}.social-post{padding:12px;margin:9px 0;border-radius:16px}
+.social-author{gap:7px;font-size:12px}.social-avatar{width:32px;height:32px;font-size:18px}
+.social-badge{font-size:9px}.social-post p{font-size:13px;line-height:1.8;margin:10px 0}
+.social-meta,.social-delete{font-size:10px}.social-compose{gap:7px}
+.social-compose textarea{font-family:inherit;font-size:12px;min-height:62px;padding:10px;border-radius:13px;margin:0}
+.social-compose button{font-size:12px;padding:10px 15px;border-radius:13px}
+.social-empty{padding:35px 8px;font-size:12px}
 </style></head>
 <body>
 
@@ -373,7 +388,7 @@
     <div class="page-panel" data-page="7">
 <div class="card" style="background:linear-gradient(135deg,#fffaf7,#fff0f7)">
 <div class="social-head"><h2>تغريدات هواية</h2><button id="socialGear" class="social-gear hidden" aria-label="إعدادات المرحلة">⚙</button></div>
-<p class="social-note">معاينة التصميم — الرسائل والإعدادات هنا للتجربة فقط ولا تُحفظ.</p>
+<p class="social-note">تجربة المشرفين — التغريدات محفوظة ومشتركة بين جميع المراحل.</p>
 <label>المرحلة<select id="socialStage"><option value="">اختر المرحلة أولًا</option><option>رابع+خامس+سادس</option><option>متوسط</option><option>ثانوي</option></select></label>
 <div id="socialSettings" class="hidden"><label style="display:flex;gap:10px;align-items:center"><input id="socialEnabled" type="checkbox" checked style="width:20px;margin:0">تفعيل تغريدات هذه المرحلة <small>(معاينة)</small></label></div>
 <div id="socialContent" class="hidden"><div class="social-tabs"><button class="active" id="socialTweets">تغريدات المرحلة</button><button id="socialChats">محادثات المجموعات</button></div>
@@ -3097,7 +3112,7 @@
 (()=>{
 const el=id=>document.getElementById(id), messages=new Map(), enabled=new Map(); let mode='tweets', request=0;
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const key=()=>el('socialStage').value+'|'+mode+'|'+(mode==='chat'?el('socialGroup').value:'');
+const key=()=>mode+'|'+(mode==='chat'?el('socialGroup').value:'');
 function render(){
 const stage=el('socialStage').value, chat=mode==='chat', selected=el('socialGroup').value;
 el('socialGear').classList.toggle('hidden',!stage);el('socialContent').classList.toggle('hidden',!stage);el('socialWelcome').classList.toggle('hidden',!!stage);
@@ -3106,7 +3121,7 @@ el('socialComposeLabel').textContent=chat?'رسالة للمجموعة':'تغر�
 const active=enabled.get(stage)!==false;el('socialEnabled').checked=active;
 el('socialForm').classList.toggle('hidden',!active||(chat&&!selected));el('socialFeed').classList.toggle('social-chat',chat);
 const list=messages.get(key())||[];
-el('socialFeed').innerHTML=!active?'<div class="social-empty">التغريدات معطلة لهذه المرحلة في المعاينة</div>':chat&&!selected?'<div class="social-empty">اختر مجموعة لفتح محادثتها</div>':!list.length?'<div class="social-empty">'+(chat?'بداية محادثة المجموعة':'لا توجد تغريدات في المعاينة')+'<br>جرّب كتابة '+(chat?'رسالة':'تغريدة')+' لرؤية شكلها</div>':list.map(m=>'<article class="social-post"><div class="social-author"><span class="social-avatar">♙</span><strong>'+escape(m.name)+'</strong><span class="social-badge">✓ مشرف</span></div><p style="white-space:pre-wrap">'+escape(m.text)+'</p><div class="social-meta"><span>الآن · معاينة</span><button type="button" class="social-delete" data-social-delete="'+m.id+'">حذف</button></div></article>').join('');
+el('socialFeed').innerHTML=!active?'<div class="social-empty">التغريدات معطلة لهذه المرحلة في المعاينة</div>':chat&&!selected?'<div class="social-empty">اختر مجموعة لفتح محادثتها</div>':!list.length?'<div class="social-empty">'+(chat?'بداية محادثة المجموعة التجريبية':'لا توجد تغريدات للمشرفين بعد')+'<br>جرّب كتابة '+(chat?'رسالة':'تغريدة')+' لرؤية شكلها</div>':list.map(m=>'<article class="social-post"><div class="social-author"><span class="social-avatar">♙</span><strong>'+escape(m.name)+'</strong><span class="social-badge">✓ مشرف</span></div><p style="white-space:pre-wrap">'+escape(m.text)+'</p><div class="social-meta"><span>تجربة المشرفين</span><button type="button" class="social-delete" data-social-delete="'+m.id+'">حذف</button></div></article>').join('');
 }
 el('socialStage').onchange=async()=>{
 const stage=el('socialStage').value, token=++request;el('socialSettings').classList.add('hidden');el('socialText').value='';el('socialStatus').textContent='';
@@ -3120,9 +3135,33 @@ render();
 el('socialGear').onclick=()=>el('socialSettings').classList.toggle('hidden');
 el('socialEnabled').onchange=()=>{enabled.set(el('socialStage').value,el('socialEnabled').checked);render();};
 el('socialTweets').onclick=()=>{mode='tweets';render();};el('socialChats').onclick=()=>{mode='chat';render();};el('socialGroup').onchange=()=>{el('socialText').value='';render();};
-el('socialForm').onsubmit=e=>{e.preventDefault();const text=el('socialText').value.trim();if(!text||!el('socialStage').value||(mode==='chat'&&!el('socialGroup').value)||enabled.get(el('socialStage').value)===false)return;
-const list=messages.get(key())||[], message={id:Date.now()+Math.random(),name:currentSupervisorName||'المشرف',text};mode==='chat'?list.push(message):list.unshift(message);messages.set(key(),list);el('socialText').value='';render();};
-el('socialFeed').onclick=e=>{const b=e.target.closest('[data-social-delete]');if(!b)return;messages.set(key(),(messages.get(key())||[]).filter(m=>String(m.id)!==b.dataset.socialDelete));render();};
+
+let loadingToken=0,busy=false;
+async function sync(action='getSupervisorPreview',extra={}){
+ const captured=key(),token=++loadingToken;
+ if(!el('socialStage').value||(mode==='chat'&&!el('socialGroup').value))return;
+ try{
+ const data=await callAppsScript({action,channel:mode==='chat'?'chat':'tweets',groupId:mode==='chat'?el('socialGroup').value:null,...extra});
+ if(!data.success)throw Error(data.error||'تعذر الاتصال');
+ if(token===loadingToken&&captured===key()){messages.set(captured,data.messages||[]);render();el('socialStatus').textContent='';}
+ return true;
+ }catch(e){if(token===loadingToken)el('socialStatus').textContent=e.message||'تعذر تحميل الرسائل';return false;}
+}
+el('socialForm').onsubmit=async e=>{
+ e.preventDefault();const text=el('socialText').value.trim();
+ if(busy||!text||!el('socialStage').value||(mode==='chat'&&!el('socialGroup').value))return;
+ busy=true;el('socialSend').disabled=true;
+ const captured=key();
+ try{if(await sync('postSupervisorPreview',{text}))if(captured===key())el('socialText').value='';}
+ finally{busy=false;el('socialSend').disabled=false;}
+};
+el('socialFeed').onclick=async e=>{
+const button=e.target.closest('[data-social-delete]');if(!button||busy)return;
+busy=true;button.disabled=true;try{await sync('deleteSupervisorPreview',{messageId:button.dataset.socialDelete});}finally{busy=false;}
+};
+for(const id of ['socialStage','socialGroup'])el(id).addEventListener('change',()=>sync());
+for(const id of ['socialTweets','socialChats'])el(id).addEventListener('click',()=>sync());
+setInterval(()=>{if(!busy&&!document.hidden&&document.querySelector('[data-page="7"]').style.display!=='none')sync();},12000);
 render();
 })();
 </script></body>
