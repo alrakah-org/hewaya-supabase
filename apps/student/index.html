@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<meta name="hawaya-version" content="social-live-20261005">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>هواية</title>
@@ -164,7 +165,7 @@
     -webkit-overflow-scrolling:touch;overscroll-behavior-y:auto;
     transform:translateX(100%);transition:transform .4s cubic-bezier(.22,.61,.36,1);display:none;
   }
-  .page-panel[data-page="0"]{display:block;transform:translateX(0);}
+  .page-panel[data-page="5"]{display:block;transform:translateX(0);}
 
   .section-card{
     background:linear-gradient(145deg,#FFFFFF 0%,#FFF9FC 64%,#F8F3FC 100%);border-radius:var(--radius);padding:22px 20px;
@@ -380,7 +381,38 @@
 
   @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
 </style>
-</head>
+<style>
+.student-social{max-width:650px;margin:auto;color:var(--indigo)}
+.student-social h1{font-family:'Baloo Bhaijaan 2',sans-serif;font-size:24px;text-align:center;margin:0 0 8px}
+.student-social-stage{background:#eee5f5;border-radius:24px;width:fit-content;padding:8px 22px;margin:0 auto;font-size:13px;font-weight:800}
+.student-social-caption{text-align:center;font-size:11px;color:var(--text-muted);line-height:1.8;margin:9px 0}
+.student-social-tabs{display:flex;gap:6px;margin:15px 0}.student-social-tabs button{flex:1;width:auto;font-size:13px;padding:11px 10px;margin:0;border-radius:14px;background:#f0e8f6;color:var(--indigo);box-shadow:none}
+.student-social-tabs button.active{color:white;background:linear-gradient(110deg,#8133a6,#a84db9)}
+#studentSocialForm{background:radial-gradient(ellipse at 100% 100%,#fcedf7,transparent 38%),#fff;border:1px solid #efcfe5;border-radius:20px;padding:14px;margin:12px 0 18px;box-shadow:0 5px 20px #9a638b12}
+.student-social-compose{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:center}
+.student-social-avatar{width:44px;height:44px;border-radius:50%;background:#fbe2f0;display:grid;place-items:center;font-size:26px;overflow:hidden;flex-shrink:0}
+.student-social-avatar img{width:100%;height:100%;object-fit:cover}
+#studentSocialText{width:100%;min-height:72px;font-family:inherit;font-size:13px;padding:15px 12px;margin:0;border:1px solid #e7deeb;border-radius:16px;background:#fff;resize:vertical}
+#studentSocialSend{grid-column:2;justify-self:end;width:auto;min-width:82px;font-size:13px;padding:10px 22px;margin:0;border-radius:24px;background:linear-gradient(110deg,#8133a6,#a84db9)}
+.student-social h2{font-size:16px;margin:15px 0 10px}
+.student-social-post{background:#fff;border:1px solid #efd9e9;border-radius:18px;padding:13px;margin:10px 0;box-shadow:0 3px 14px #9a638b08}
+.student-social-author{display:flex;align-items:center;gap:8px;font-size:13px}
+.student-social-author .student-social-avatar{width:36px;height:36px;font-size:22px}
+.student-social-author strong{display:block}.student-social-time{display:block;font-size:10px;color:var(--text-muted);margin-top:4px}
+.student-social-badge{font-size:10px;color:#3778ba}
+.student-social-post p{white-space:pre-wrap;font-size:13px;line-height:1.9;margin:11px 0;overflow-wrap:anywhere}
+.student-social-like{background:none!important;color:var(--indigo)!important;box-shadow:none!important;width:auto!important;margin:0!important;padding:5px 8px!important;font-size:13px!important}
+.student-social-like.liked{color:#e85093!important}
+#studentSocialFeed.is-chat{max-height:48vh;overflow:auto;padding:0 2px 8px}
+.is-chat .student-social-post{max-width:88%;background:#fff;border-radius:17px 17px 17px 4px;margin-left:auto}
+.is-chat .student-social-post.mine{background:#efe3f7;margin-right:auto;margin-left:0;border-radius:17px 17px 4px 17px}
+#studentSocialForm.is-chat .student-social-compose{display:flex;align-items:end}
+#studentSocialForm.is-chat .student-social-avatar{display:none}
+#studentSocialForm.is-chat #studentSocialSend{min-width:65px;padding:10px}
+#studentSocialForm.is-chat #studentSocialText{min-height:48px}
+.social-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.student-social-nav-icon{width:27px;height:27px;fill:currentColor}
+</style></head>
 <body>
 
 <!-- يظهر مرة واحدة عند فتح التطبيق، ويعمل صامتًا -->
@@ -598,10 +630,34 @@
       </div>
     </div>
 
+    <div class="page-panel" data-page="5">
+      <section class="student-social">
+        <h1>تغريدات هواية</h1>
+        <div id="studentSocialStage" class="student-social-stage"></div>
+        <p class="student-social-caption">تغريدات طلاب مرحلتك فقط</p>
+        <div class="student-social-tabs" role="tablist" aria-label="التغريدات والمجموعة">
+          <button type="button" id="studentTweetsTab" role="tab" aria-selected="true" class="active">التغريدات</button>
+          <button type="button" id="studentChatTab" role="tab" aria-selected="false">مجموعتي</button>
+        </div>
+        <p id="studentSocialGroupName" class="student-social-caption hidden"></p>
+        <p id="studentSocialMessage" role="status" aria-live="polite" class="student-social-caption"></p>
+        <form id="studentSocialForm" class="hidden">
+          <label for="studentSocialText" class="social-sr-only">اكتب تغريدتك</label>
+          <div class="student-social-compose">
+            <span id="studentSocialAvatar" class="student-social-avatar" aria-hidden="true">🧒</span>
+            <textarea id="studentSocialText" maxlength="500" required placeholder="وش حاب تشارك اليوم؟"></textarea>
+            <button id="studentSocialSend" type="submit">نشر</button>
+          </div>
+        </form>
+        <h2 id="studentSocialFeedTitle">أحدث التغريدات</h2>
+        <div id="studentSocialFeed" aria-live="polite"></div>
+      </section>
+    </div>
+
   </div>
 
-  <div class="bottom-nav">
-    <button class="nav-btn active" data-index="0" aria-label="الرئيسية"><img class="nav-ic-img" src="nav-home.png" alt=""></button>
+  <div class="bottom-nav"><button class="nav-btn active" data-index="5" aria-label="التغريدات"><svg class="student-social-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h14a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H9l-5 4v-4a3 3 0 0 1-2-3V5a3 3 0 0 1 3-3Z"/><g fill="white"><circle cx="7" cy="10" r="1.3"/><circle cx="12" cy="10" r="1.3"/><circle cx="17" cy="10" r="1.3"/></g></svg></button>
+    <button class="nav-btn" data-index="0" aria-label="الرئيسية"><img class="nav-ic-img" src="nav-home.png" alt=""></button>
     <button class="nav-btn" data-index="1" aria-label="نقاطي"><img class="nav-ic-img" src="nav-points.png" alt=""></button>
     <button class="nav-btn" data-index="3" aria-label="المعلومات"><img class="nav-ic-img" src="nav-info.png" alt=""></button>
     <button class="nav-btn" data-index="4" aria-label="تابعنا"><img class="nav-ic-img" src="nav-follow.png" alt=""></button>
@@ -1050,7 +1106,9 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
       if (!payload.id) payload.id = saved.id;
       if (!payload.password) payload.password = saved.pw;
     }
-    const res = await fetch(APPS_SCRIPT_URL, {
+    const socialAction=['getStudentSocial','postStudentSocial','setStudentSocialLike','getSupervisorSocial','postSupervisorSocial','deleteSupervisorSocial','setSocialStageEnabled'].includes(payload.action);
+    const endpoint=socialAction?'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-social':APPS_SCRIPT_URL;
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1180,6 +1238,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     appView.classList.remove('hidden');
     populateStudentData(data);
     resetPagesToHome();
+    if(window.resetStudentSocial)window.resetStudentSocial();
     loadAnnouncements();
     // العشرة الأوائل مخفية حاليًا (ترقبوا الحفل) — تعطيل تحميلها مؤقتًا
     // loadLeaderboard();
@@ -1215,7 +1274,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   // ====== التنقل بين الصفحات: الانزلاق يكون بنفس جهة الأيقونة المضغوطة ======
   const panels = Array.from(document.querySelectorAll('.page-panel'));
   const navButtons = document.querySelectorAll('.nav-btn');
-  let currentIndex = 0;
+  let currentIndex = 5;
 
   // ترتيب الأيقونات بالقائمة السفلية من اليمين لليسار (نفس ترتيب DOM بصفحة RTL):
   // 0=الرئيسية (أقصى اليمين) ... 4=تابعنا (أقصى اليسار)
@@ -1256,13 +1315,13 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   function resetPagesToHome() {
     panels.forEach((p, i) => {
       p.style.transition = 'none';
-      p.style.display = i === 0 ? 'block' : 'none';
-      p.style.transform = i === 0 ? 'translateX(0)' : 'translateX(100%)';
+      p.style.display = i === 5 ? 'block' : 'none';
+      p.style.transform = i === 5 ? 'translateX(0)' : 'translateX(100%)';
     });
-    panels[0].getBoundingClientRect();
+    panels[5].getBoundingClientRect();
     panels.forEach((p) => { p.style.transition = ''; });
-    currentIndex = 0;
-    navButtons.forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.index) === 0));
+    currentIndex = 5;
+    navButtons.forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.index) === 5));
   }
 
   navButtons.forEach((btn) => {
@@ -1542,5 +1601,56 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   init();
   } // نهاية else (PROGRAM_ENDED)
 </script>
-</body>
+<script>
+(()=>{
+ const el=id=>document.getElementById(id),esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ let channel='tweets',seq=0,busy=false,allowed=false,items=[],pendingId=null;
+ const avatar=url=>/^https?:\/\//i.test(url||'')?'<img src="'+esc(url)+'" alt="" loading="lazy">':'🧒';
+ function timestamp(value){const time=new Date(value);return isNaN(time.getTime())?'':time.toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+ function render(data){
+  const chat=channel==='chat', feed=el('studentSocialFeed'),form=el('studentSocialForm');
+  el('studentTweetsTab').classList.toggle('active',!chat);el('studentChatTab').classList.toggle('active',chat);
+  el('studentTweetsTab').setAttribute('aria-selected',String(!chat));el('studentChatTab').setAttribute('aria-selected',String(chat));
+  el('studentSocialStage').textContent=data.stageLabel||currentStudentStage;
+  el('studentSocialGroupName').classList.toggle('hidden',!chat);el('studentSocialGroupName').textContent=data.groupName||'';
+  el('studentSocialSend').textContent=chat?'إرسال':'نشر';el('studentSocialText').placeholder=chat?'اكتب رسالتك للمجموعة…':'وش حاب تشارك اليوم؟';
+  form.querySelector('label').textContent=chat?'اكتب رسالتك':'اكتب تغريدتك';
+  el('studentSocialFeedTitle').textContent=chat?'محادثة مجموعتي':'أحدث التغريدات';
+  form.classList.toggle('is-chat',chat);feed.classList.toggle('is-chat',chat);
+  if(chat){if(feed.nextElementSibling!==form)feed.after(form);}else{const title=el('studentSocialFeedTitle');if(form.nextElementSibling!==title)title.before(form);}
+  allowed=data.enabled===true&&(!chat||data.hasGroup===true);form.classList.toggle('hidden',!allowed);
+  el('studentSocialMessage').textContent=!data.enabled?'التغريدات معطلة حاليًا لهذه المرحلة':chat&&!data.hasGroup?'لم تتم إضافتك إلى مجموعة بعد':'';
+  const wasBottom=feed.scrollHeight-feed.scrollTop-feed.clientHeight<45;
+  items=data.messages||[];
+  feed.innerHTML=items.length?items.map(m=>'<article class="student-social-post '+(m.mine?'mine':'')+'"><div class="student-social-author"><span class="student-social-avatar">'+avatar(m.imageUrl)+'</span><div><strong>'+esc(m.name)+'</strong><time class="student-social-time">'+esc(timestamp(m.createdAt))+'</time></div>'+(m.supervisor?'<span class="student-social-badge">✓ مشرف</span>':'')+'</div><p>'+esc(m.text)+'</p>'+(!chat?'<button type="button" class="student-social-like '+(m.liked?'liked':'')+'" data-like="'+esc(m.id)+'" aria-label="إعجاب" aria-pressed="'+String(!!m.liked)+'">'+(m.liked?'♥':'♡')+' '+Number(m.likes||0)+'</button>':'')+'</article>').join(''):allowed?'<p class="student-social-caption">'+(chat?'ابدأ المحادثة مع مجموعتك':'كن أول من يشارك تغريدة في مرحلتك')+'</p>':'';
+  if(chat&&wasBottom)feed.scrollTop=feed.scrollHeight;
+ }
+ async function load(action='getStudentSocial',extra={}){
+  const session=getSession();if(!session)return false;
+  const token=++seq, captured=channel;
+  try{
+   const data=await callAppsScript({action,channel:captured,...extra});
+   if(token!==seq||captured!==channel||getSession()?.id!==session.id)return false;
+   if(!data.success)throw Error(data.error||'تعذر الاتصال');
+   render(data);return data.enabled===true;
+  }catch(error){if(token===seq){el('studentSocialMessage').textContent=error.message||'تعذر تحميل التغريدات';if(action==='getStudentSocial'){allowed=false;el('studentSocialForm').classList.add('hidden');}}return false;}
+ }
+ function change(next){if(busy)return;channel=next;seq++;items=[];pendingId=null;el('studentSocialText').value='';allowed=false;el('studentSocialForm').classList.add('hidden');el('studentSocialFeed').innerHTML='';el('studentSocialMessage').textContent='جاري التحميل…';load();}
+ el('studentTweetsTab').onclick=()=>change('tweets');el('studentChatTab').onclick=()=>change('chat');
+ el('studentSocialText').oninput=()=>{pendingId=null;};
+ el('studentSocialForm').onsubmit=async e=>{
+  e.preventDefault();const text=el('studentSocialText').value.trim();if(busy||!allowed||!text)return;
+  busy=true;el('studentSocialSend').disabled=true;seq++;pendingId=pendingId||crypto.randomUUID();
+  try{if(await load('postStudentSocial',{text,messageId:pendingId})){el('studentSocialText').value='';pendingId=null;if(channel==='chat'){const f=el('studentSocialFeed');f.scrollTop=f.scrollHeight;}}}finally{busy=false;el('studentSocialSend').disabled=false;}
+ };
+ el('studentSocialFeed').onclick=async e=>{
+  const b=e.target.closest('[data-like]');if(!b||busy||!allowed)return;const m=items.find(x=>x.id===b.dataset.like);if(!m)return;
+  busy=true;b.disabled=true;try{await load('setStudentSocialLike',{messageId:m.id,liked:!m.liked});}finally{busy=false;b.disabled=false;}
+ };
+ window.resetStudentSocial=()=>{seq++;channel='tweets';items=[];pendingId=null;allowed=false;el('studentSocialText').value='';el('studentSocialFeed').innerHTML='';el('studentSocialForm').classList.add('hidden');const avatarEl=el('studentSocialAvatar'),photo=document.getElementById('infoAvatar').style.backgroundImage;avatarEl.style.backgroundImage=photo;avatarEl.style.backgroundSize='cover';avatarEl.style.backgroundPosition='center';avatarEl.textContent=photo?'':'🧒';load();};
+ document.querySelector('[data-index="5"]').addEventListener('click',()=>{if(!busy)load();});
+ document.getElementById('logoutBtn').addEventListener('click',()=>{seq++;items=[];el('studentSocialFeed').innerHTML='';el('studentSocialText').value='';allowed=false;});
+ setInterval(()=>{if(!busy&&!document.hidden&&currentIndex===5&&!appView.classList.contains('hidden'))load();},12000);
+})();
+</script></body>
 </html>
