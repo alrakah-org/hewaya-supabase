@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta name="hawaya-version" content="social-live-20261005">
+<meta name="hawaya-version" content="social-scope-fix-20261006">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>هواية</title>
@@ -1597,11 +1597,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     }
   }
 
-  setupStudentInfoLayout();
-  init();
-  } // نهاية else (PROGRAM_ENDED)
-</script>
-<script>
+
 (()=>{
  const el=id=>document.getElementById(id),esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let channel='tweets',seq=0,busy=false,allowed=false,items=[],pendingId=null;
@@ -1652,5 +1648,10 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
  document.getElementById('logoutBtn').addEventListener('click',()=>{seq++;items=[];el('studentSocialFeed').innerHTML='';el('studentSocialText').value='';allowed=false;});
  setInterval(()=>{if(!busy&&!document.hidden&&currentIndex===5&&!appView.classList.contains('hidden'))load();},12000);
 })();
-</script></body>
+
+  setupStudentInfoLayout();
+  init();
+  } // نهاية else (PROGRAM_ENDED)
+</script>
+</body>
 </html>
