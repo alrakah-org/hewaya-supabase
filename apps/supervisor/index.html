@@ -343,7 +343,7 @@
 #socialForm:not(.is-chat) #socialSend{grid-column:2;justify-self:end;min-width:84px;padding:10px 22px;border-radius:24px;background:linear-gradient(100deg,#7e32a6,#a344b7);font-size:14px}
 #socialForm.is-chat .social-compose-avatar{display:none}
 #socialForm.is-chat{margin-top:12px}
-</style></head>
+</style><style>.social-pinned-label{font-size:10px;color:#8745a8;font-weight:700;margin-bottom:9px}.social-pin{width:auto!important;padding:3px 8px!important;margin:0 0 0 9px!important;font-size:11px!important;color:#764295!important;background:#f1e8f7!important;box-shadow:none!important;border-radius:10px!important}</style></head>
 <body>
 
 <!-- ===================== شاشة تسجيل دخول المشرف ===================== -->
@@ -1141,7 +1141,7 @@
   async function callAppsScript(payload) {
     let session = null;
     try { session = JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY) || 'null'); } catch (_) {}
-    const socialAction=['getStudentSocial','postStudentSocial','setStudentSocialLike','getSupervisorSocial','postSupervisorSocial','deleteSupervisorSocial','setSocialStageEnabled'].includes(payload.action);
+    const socialAction=['getStudentSocial','postStudentSocial','setStudentSocialLike','getSupervisorSocial','postSupervisorSocial','deleteSupervisorSocial','setSupervisorSocialPin','setSocialStageEnabled'].includes(payload.action);
     const endpoint=socialAction?'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-social':APPS_SCRIPT_URL;
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -3136,7 +3136,7 @@ el('socialComposeLabel').textContent=chat?'رسالة للمجموعة':'تغر�
 const active=enabled.get(stage)!==false;el('socialEnabled').checked=active;
 el('socialForm').classList.toggle('hidden',!active||(chat&&!selected));el('socialFeed').classList.toggle('social-chat',chat);
 const list=messages.get(key())||[];
-el('socialFeed').innerHTML=chat&&!selected?'<div class="social-empty">اختر مجموعة لفتح محادثتها</div>':!list.length?'<div class="social-empty">'+(chat?'بداية محادثة المجموعة':'لا توجد تغريدات في هذه المرحلة بعد')+'<br>جرّب كتابة '+(chat?'رسالة':'تغريدة')+' لرؤية شكلها</div>':list.map(m=>'<article class="social-post"><div class="social-author"><span class="social-avatar">'+(/^https?:\/\//i.test(m.imageUrl||'')?'<img src="'+escape(m.imageUrl)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':'♙')+'</span><strong>'+escape(m.name)+'</strong>'+(m.supervisor?'<span class="social-badge">✓ مشرف</span>':'')+'</div><p style="white-space:pre-wrap">'+escape(m.text)+'</p><div class="social-meta"><span>'+escape(new Date(m.createdAt).toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+' · '+Number(m.likes||0)+' إعجاب</span><button type="button" class="social-delete" data-social-delete="'+m.id+'">حذف</button></div></article>').join('');
+el('socialFeed').innerHTML=chat&&!selected?'<div class="social-empty">اختر مجموعة لفتح محادثتها</div>':!list.length?'<div class="social-empty">'+(chat?'بداية محادثة المجموعة':'لا توجد تغريدات في هذه المرحلة بعد')+'<br>جرّب كتابة '+(chat?'رسالة':'تغريدة')+' لرؤية شكلها</div>':list.map(m=>'<article class="social-post">'+(m.pinned?'<div class="social-pinned-label">مثبتة</div>':'')+'<div class="social-author"><span class="social-avatar">'+(/^https?:\/\//i.test(m.imageUrl||'')?'<img src="'+escape(m.imageUrl)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':'♙')+'</span><strong>'+escape(m.name)+'</strong>'+(m.supervisor?'<span class="social-badge">✓ مشرف</span>':'')+'</div><p style="white-space:pre-wrap">'+escape(m.text)+'</p><div class="social-meta"><span>'+escape(new Date(m.createdAt).toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+' · '+Number(m.likes||0)+' إعجاب</span><span>'+(!chat?'<button type="button" class="social-pin" data-social-pin="'+m.id+'" data-pinned="'+String(!!m.pinned)+'">'+(m.pinned?'إلغاء التثبيت':'تثبيت')+'</button>':'')+'<button type="button" class="social-delete" data-social-delete="'+m.id+'">حذف</button></span></div></article>').join('');
 }
 el('socialStage').onchange=async()=>{
 mode='tweets';const stage=el('socialStage').value, token=++request;el('socialSettings').classList.add('hidden');el('socialText').value='';el('socialStatus').textContent='';
@@ -3176,8 +3176,11 @@ el('socialForm').onsubmit=async e=>{
  finally{busy=false;el('socialSend').disabled=false;}
 };
 el('socialFeed').onclick=async e=>{
-const button=e.target.closest('[data-social-delete]');if(!button||busy)return;
-busy=true;button.disabled=true;try{await sync('deleteSupervisorSocial',{messageId:button.dataset.socialDelete});}finally{busy=false;}
+const button=e.target.closest('[data-social-delete],[data-social-pin]');if(!button||busy)return;
+busy=true;button.disabled=true;try{
+if(button.dataset.socialPin)await sync('setSupervisorSocialPin',{messageId:button.dataset.socialPin,pinned:button.dataset.pinned!=='true'});
+else await sync('deleteSupervisorSocial',{messageId:button.dataset.socialDelete});
+}finally{busy=false;button.disabled=false;}
 };
 for(const id of ['socialStage','socialGroup'])el(id).addEventListener('change',()=>sync());
 for(const id of ['socialTweets','socialChats'])el(id).addEventListener('click',()=>sync());

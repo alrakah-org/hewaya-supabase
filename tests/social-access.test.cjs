@@ -22,6 +22,7 @@ function harness({enabled=true}={}){
   else if(p==='/rpc/edge_supervisor_session')result=[{supervisor_id:'30000000-0000-4000-8000-000000000001',supervisor_name:'مشرف تجريبي'}];
   else{
    const name=p.slice(1);assert.ok(tables[name],name);
+   if(name==='hawaya_social_messages'&&method==='GET'&&u.searchParams.get('select')?.includes('students(photo_url)'))throw Error('Ambiguous relationship between messages and students');
    const matches=row=>[...u.searchParams].every(([key,val])=>{
     if(['select','order','limit'].includes(key))return true;
     if(val==='is.null')return row[key]==null;
@@ -29,7 +30,7 @@ function harness({enabled=true}={}){
     if(val.startsWith('in.('))return val.slice(4,-1).split(',').includes(String(row[key]));
     throw Error('Unhandled '+val);
    });
-   if(method==='GET'){result=tables[name].filter(matches).map(x=>({...x}));if(u.searchParams.has('order'))result.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));}
+   if(method==='GET'){result=tables[name].filter(matches).map(x=>({...x}));if(u.searchParams.has('order'))result.sort((a,b)=>{if(u.searchParams.get('order').startsWith('pinned_at')){if(!!a.pinned_at!==!!b.pinned_at)return a.pinned_at?-1:1;const pin=String(b.pinned_at||'').localeCompare(String(a.pinned_at||''));if(pin)return pin;}return String(b.created_at).localeCompare(String(a.created_at));});}
    else{writes.push({name,method,body,url});
     if(method==='POST'){const duplicate=tables[name].find(x=>name==='hawaya_social_likes'?x.message_id===body.message_id&&x.student_id===body.student_id:x.id===body.id);if(!duplicate)tables[name].push({...body,deleted_at:null,created_at:'2026-10-05T15:00:00Z'});result=[body];}
     if(method==='PATCH'){result=tables[name].filter(matches);result.forEach(x=>Object.assign(x,body));}
@@ -99,4 +100,34 @@ test('tweets newest first, chats chronological',async()=>{
  await h.call('postStudentSocial',{channel:'chat',messageId:webcrypto.randomUUID(),text:'new chat'});
  const chat=(await h.call('getStudentSocial',{channel:'chat'})).data.messages;
  assert.equal(chat[0].id,M3);assert.equal(chat.at(-1).text,'new chat');
+});
+
+test('pin requires supervisor session',async()=>{
+ const h=harness(),r=await h.call('setSupervisorSocialPin',{stage:'middle',messageId:M1,pinned:true});
+ assert.equal(r.status,401);assert.equal(h.writes.length,0);
+});
+test('pinned tweet precedes newer tweets, unpin restores chronological feed',async()=>{
+ const h=harness(),id=webcrypto.randomUUID();
+ await h.call('postStudentSocial',{text:'newer tweet',messageId:id});
+ let r=await h.call('setSupervisorSocialPin',{stage:'middle',messageId:M1,pinned:true},true);
+ assert.equal(r.data.success,true);
+ const student=(await h.call('getStudentSocial')).data.messages;
+ assert.equal(student[0].id,M1);assert.equal(student[0].pinned,true);
+ assert.equal(h.tables.hawaya_social_messages.find(m=>m.id===M1).pinned_by,'30000000-0000-4000-8000-000000000001');
+ await h.call('setSupervisorSocialPin',{stage:'middle',messageId:M1,pinned:false},true);
+ assert.equal((await h.call('getStudentSocial')).data.messages[0].id,id);
+ assert.equal(h.tables.hawaya_social_messages.find(m=>m.id===M1).pinned_by,null);
+});
+test('pin cannot affect another stage or group chat',async()=>{
+ const h=harness();
+ assert.equal((await h.call('setSupervisorSocialPin',{stage:'middle',messageId:M2,pinned:true},true)).data.success,false);
+ assert.equal((await h.call('setSupervisorSocialPin',{stage:'middle',channel:'chat',groupId:G1,messageId:M3,pinned:true},true)).data.success,false);
+ assert.equal(h.tables.hawaya_social_messages.find(m=>m.id===M2).pinned_at,undefined);
+ assert.equal(h.tables.hawaya_social_messages.find(m=>m.id===M3).pinned_at,undefined);
+});
+test('student cannot inject pin fields while posting',async()=>{
+ const h=harness(),id=webcrypto.randomUUID();
+ await h.call('postStudentSocial',{messageId:id,text:'ordinary',pinned:true,pinned_at:'2026-10-05',pinned_by:'forged'});
+ const m=h.tables.hawaya_social_messages.find(m=>m.id===id);
+ assert.equal(m.pinned_at,undefined);assert.equal(m.pinned_by,undefined);
 });

@@ -412,7 +412,7 @@
 #studentSocialForm.is-chat #studentSocialText{min-height:48px}
 .social-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 .student-social-nav-icon{width:27px;height:27px;fill:currentColor}
-</style></head>
+</style><style>.student-pinned-label{font-size:10px;color:#8745a8;font-weight:700;margin-bottom:9px}</style></head>
 <body>
 
 <!-- يظهر مرة واحدة عند فتح التطبيق، ويعمل صامتًا -->
@@ -1622,7 +1622,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   el('studentSocialMessage').textContent=!data.enabled?'التغريدات معطلة حاليًا لهذه المرحلة':chat&&!data.hasGroup?'لم تتم إضافتك إلى مجموعة بعد':'';
   const wasBottom=feed.scrollHeight-feed.scrollTop-feed.clientHeight<45;
   items=data.messages||[];
-  feed.innerHTML=items.length?items.map(m=>'<article class="student-social-post '+(m.mine?'mine':'')+'"><div class="student-social-author"><span class="student-social-avatar">'+avatar(m.imageUrl)+'</span><div><strong>'+esc(m.name)+'</strong><time class="student-social-time">'+esc(timestamp(m.createdAt))+'</time></div>'+(m.supervisor?'<span class="student-social-badge">✓ مشرف</span>':'')+'</div><p>'+esc(m.text)+'</p>'+(!chat?'<button type="button" class="student-social-like '+(m.liked?'liked':'')+'" data-like="'+esc(m.id)+'" aria-label="إعجاب" aria-pressed="'+String(!!m.liked)+'">'+(m.liked?'♥':'♡')+' '+Number(m.likes||0)+'</button>':'')+'</article>').join(''):allowed?'<p class="student-social-caption">'+(chat?'ابدأ المحادثة مع مجموعتك':'كن أول من يشارك تغريدة في مرحلتك')+'</p>':'';
+  feed.innerHTML=items.length?items.map(m=>'<article class="student-social-post '+(m.mine?'mine':'')+'">'+(m.pinned?'<div class="student-pinned-label">مثبتة</div>':'')+'<div class="student-social-author"><span class="student-social-avatar">'+avatar(m.imageUrl)+'</span><div><strong>'+esc(m.name)+'</strong><time class="student-social-time">'+esc(timestamp(m.createdAt))+'</time></div>'+(m.supervisor?'<span class="student-social-badge">✓ مشرف</span>':'')+'</div><p>'+esc(m.text)+'</p>'+(!chat?'<button type="button" class="student-social-like '+(m.liked?'liked':'')+'" data-like="'+esc(m.id)+'" aria-label="إعجاب" aria-pressed="'+String(!!m.liked)+'">'+(m.liked?'♥':'♡')+' '+Number(m.likes||0)+'</button>':'')+'</article>').join(''):allowed?'<p class="student-social-caption">'+(chat?'ابدأ المحادثة مع مجموعتك':'كن أول من يشارك تغريدة في مرحلتك')+'</p>':'';
   if(chat&&wasBottom)feed.scrollTop=feed.scrollHeight;
  }
  async function load(action='getStudentSocial',extra={}){

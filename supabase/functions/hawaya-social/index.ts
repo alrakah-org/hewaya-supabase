@@ -154,12 +154,12 @@ async function socialContext(body:any, supervisor:any=null) {
 
 async function socialFeed(ctx:any) {
  if(!ctx.filter)return [];
- const list=await rows(`/hawaya_social_messages?${ctx.filter}&order=created_at.desc,id.desc&limit=100&select=id,body,author_name,author_student_id,author_supervisor_id,created_at,students(photo_url)`);
+ const list=await rows(`/hawaya_social_messages?${ctx.filter}&order=${ctx.channel==='tweets'?'pinned_at.desc.nullslast,':''}created_at.desc,id.desc&limit=100&select=id,body,author_name,author_student_id,author_supervisor_id,created_at,pinned_at,students:students!hawaya_social_messages_author_student_id_fkey(photo_url)`);
  const likes=list.length?await rows(`/hawaya_social_likes?message_id=in.(${list.map((m:any)=>m.id).join(',')})&select=message_id,student_id&limit=20000`):[];
  const count:Record<string,number>={},liked=new Set();
  for(const like of likes){count[like.message_id]=(count[like.message_id]||0)+1;if(like.student_id===ctx.student?.id)liked.add(like.message_id);}
  if(ctx.channel==='chat')list.reverse();
- return list.map((m:any)=>({id:m.id,name:m.author_name,text:m.body,createdAt:m.created_at,
+ return list.map((m:any)=>({id:m.id,name:m.author_name,text:m.body,createdAt:m.created_at,pinned:!!m.pinned_at,
  imageUrl:m.students?.photo_url||'',supervisor:!!m.author_supervisor_id,likes:count[m.id]||0,liked:liked.has(m.id),
  mine:!!ctx.student&&m.author_student_id===ctx.student.id}));
 }
@@ -188,6 +188,14 @@ async function socialAction(body:any,supervisor:any=null) {
   if(body.liked===true)await db('/hawaya_social_likes',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=representation'},body:JSON.stringify({message_id:id,student_id:ctx.student.id})});
   else await db(`/hawaya_social_likes?message_id=eq.${id}&student_id=eq.${ctx.student.id}`,{method:'DELETE'});
  }
+ if(action==='setSupervisorSocialPin'){
+  if(!supervisor||ctx.channel!=='tweets'||typeof body.pinned!=='boolean')return {success:false,error:'التثبيت متاح للمشرف في التغريدات فقط'};
+  const id=socialUuid(body.messageId);if(!id)return {success:false,error:'تغريدة غير صالحة'};
+  const saved=await db(`/hawaya_social_messages?id=eq.${id}&${ctx.filter}`,{method:'PATCH',body:JSON.stringify({
+   pinned_at:body.pinned?new Date().toISOString():null,pinned_by:body.pinned?supervisor.supervisor_id:null
+  })});
+  if(!saved?.[0])return {success:false,error:'التغريدة غير متاحة في المرحلة'};
+ }
  if(action==='deleteSupervisorSocial'){
   const id=socialUuid(body.messageId);if(!id)return {success:false,error:'رسالة غير صالحة'};
   await db(`/hawaya_social_messages?id=eq.${id}&${ctx.filter}`,{method:'PATCH',body:JSON.stringify({deleted_at:new Date().toISOString()})});
@@ -205,7 +213,7 @@ Deno.serve(async(req)=>{
   if(['getStudentSocial','postStudentSocial','setStudentSocialLike'].includes(action))return json(await socialAction(body));
   const supervisor=await requireSupervisor(req);
   if(!supervisor)return json({success:false,error:'انتهت جلسة المشرف، سجل الدخول مجددًا'},401);
-  if(['getSupervisorSocial','postSupervisorSocial','deleteSupervisorSocial'].includes(action))return json(await socialAction(body,supervisor));
+  if(['getSupervisorSocial','postSupervisorSocial','deleteSupervisorSocial','setSupervisorSocialPin'].includes(action))return json(await socialAction(body,supervisor));
   if(action==='setSocialStageEnabled'){
    const stage=pointStage(body.stage);if(!stage||typeof body.enabled!=='boolean')return json({success:false,error:'اختر المرحلة'},400);
    const saved=await db(`/tweet_stage_settings?stage_category=eq.${stage}`,{method:'PATCH',body:JSON.stringify({enabled:body.enabled,updated_at:new Date().toISOString()})});
