@@ -854,7 +854,7 @@
         </div>
         <p class="error" id="achievementItemMsg" role="status" aria-live="polite"></p>
       </div>
-      <div class="card"><div class="section-title">📋 البنود الحالية</div><div id="achievementItemsList"></div></div>
+      <div class="card"><div class="section-title">📋 البنود الحالية</div><p style="font-size:12px;color:var(--text-muted);margin:0 0 12px;">استخدم ↑ و↓ لترتيب البنود. يُحفظ الترتيب تلقائيًا لهذه المرحلة ويظهر عند الطلاب.</p><div id="achievementItemsList"></div></div>
     </div>
 
   </div>
@@ -1142,7 +1142,7 @@
     let session = null;
     try { session = JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY) || 'null'); } catch (_) {}
     const socialAction=['getStudentSocial','postStudentSocial','setStudentSocialLike','getSupervisorSocial','postSupervisorSocial','deleteSupervisorSocial','setSupervisorSocialPin','setSocialStageEnabled'].includes(payload.action);
-    const endpoint=socialAction?'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-social':APPS_SCRIPT_URL;
+    const endpoint=payload.action==='moveAchievementItem'?'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-items':socialAction?'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-social':APPS_SCRIPT_URL;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -3022,9 +3022,11 @@
       if (!data.success || data.stage !== stage || !Array.isArray(data.items)) throw new Error(data.error || 'تعذر تحميل بنود المرحلة');
       achievementItemsAdminCache = data.items;
       document.getElementById('showAchievementItemFormBtn').disabled = false;
-      wrap.innerHTML = achievementItemsAdminCache.length ? achievementItemsAdminCache.map((item) => `<div class="list-item" style="opacity:${item.active ? 1 : .58}">
+      wrap.innerHTML = achievementItemsAdminCache.length ? achievementItemsAdminCache.map((item, index) => `<div class="list-item" style="opacity:${item.active ? 1 : .58}">
         <div style="flex:1;"><div class="list-item-title">${escapePointText(item.label)}</div><div class="list-item-sub">أسبوعي — ${Number(item.points)} نقطة للدائرة — ${Number(item.maxChecks)} ${item.maxChecks === 1 ? 'دائرة' : 'دوائر'}</div></div>
-        <div class="list-item-actions">
+        <div class="list-item-actions" style="flex-wrap:wrap;max-width:100px;">
+          <button type="button" class="icon-btn" data-move-achievement="${escapePointText(item.key)}" data-direction="up" aria-label="رفع البند" title="رفع البند" ${index === 0 ? 'disabled' : ''}>↑</button>
+          <button type="button" class="icon-btn" data-move-achievement="${escapePointText(item.key)}" data-direction="down" aria-label="إنزال البند" title="إنزال البند" ${index === achievementItemsAdminCache.length - 1 ? 'disabled' : ''}>↓</button>
           <button type="button" class="icon-btn" data-edit-achievement="${escapePointText(item.key)}" aria-label="تعديل">✏️</button>
           <button type="button" class="icon-btn" data-toggle-achievement="${escapePointText(item.key)}" data-active="${!item.active}" aria-label="${item.active ? 'تعطيل' : 'تفعيل'}">${item.active ? '⏸️' : '▶️'}</button>
         </div>
@@ -3049,6 +3051,22 @@
 
   document.getElementById('achievementItemsList').addEventListener('click', async (e) => {
     if (achievementStageSelect.disabled || !achievementStageSelect.value) return;
+    const moveBtn = e.target.closest('[data-move-achievement]');
+    if (moveBtn) {
+      const stage = achievementStageSelect.value;
+      achievementStageSelect.disabled = true;
+      document.querySelectorAll('#achievementItemsList button').forEach(b => b.disabled = true);
+      achievementMessage('جاري حفظ الترتيب...');
+      try {
+        const result = await callAppsScript({action:'moveAchievementItem',stage,key:moveBtn.dataset.moveAchievement,direction:moveBtn.dataset.direction});
+        if (!result.success) throw new Error(result.error || 'تعذر حفظ الترتيب');
+        if (await loadAchievementItemsAdmin()) achievementMessage('تم حفظ ترتيب البنود لهذه المرحلة.',true);
+      } catch (error) {
+        await loadAchievementItemsAdmin();
+        achievementMessage(error.message || 'تعذر حفظ الترتيب');
+      } finally { achievementStageSelect.disabled = false; }
+      return;
+    }
     const editBtn = e.target.closest('[data-edit-achievement]');
     const toggleBtn = e.target.closest('[data-toggle-achievement]');
     if (editBtn) {
