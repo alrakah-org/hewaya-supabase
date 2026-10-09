@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta name="hawaya-version" content="social-live-20261005">
+  <meta name="hawaya-version" content="supervisor-fast-social-20261009">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>مشرف هواية</title>
@@ -405,7 +405,7 @@
 <div id="socialContent" class="hidden"><div class="social-tabs hidden"><button class="active" id="socialTweets">تغريدات المرحلة</button><button id="socialChats">محادثات المجموعات</button></div>
 
 <div id="socialFeed" class="social-feed"></div>
-<form id="socialForm"><label id="socialComposeLabel" for="socialText">تغريدة جديدة</label><div class="social-compose"><span class="social-compose-avatar" aria-label="حساب المشرف"><svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true"><circle cx="24" cy="17" r="9" fill="#8e52ae"/><path d="M8 43c0-11 7-17 16-17s16 6 16 17" fill="#8e52ae"/></svg></span><textarea id="socialText" maxlength="500" placeholder="وش حاب تشارك اليوم؟"></textarea><button id="socialSend">نشر</button></div><p id="socialStatus" class="social-note" aria-live="polite"></p></form></div>
+<form id="socialForm"><label id="socialComposeLabel" for="socialText">تغريدة جديدة</label><div class="social-compose"><span class="social-compose-avatar" aria-label="حساب المشرف"><svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true"><circle cx="24" cy="17" r="9" fill="#8e52ae"/><path d="M8 43c0-11 7-17 16-17s16 6 16 17" fill="#8e52ae"/></svg></span><textarea id="socialText" maxlength="500" placeholder="وش حاب تشارك اليوم؟"></textarea><button id="socialSend">نشر</button></div></form><p id="socialStatus" class="social-note" role="status" aria-live="polite"></p><button id="socialRetry" type="button" class="hidden" style="width:auto;font-size:12px;padding:7px 16px;">إعادة المحاولة</button></div>
 <div id="socialWelcome" class="social-empty">اختر المرحلة لعرض تغريداتها<br>ومحادثات مجموعاتها</div>
 </div></div><div class="page-panel" data-page="3">
       <div class="card">
@@ -933,6 +933,7 @@
     currentSupervisorName = name;
     document.getElementById('supervisorLoginView').classList.add('hidden');
     document.getElementById('appView').classList.remove('hidden');
+    if(window.resetSupervisorSocial)window.resetSupervisorSocial();
   }
 
   document.getElementById('supervisorLoginForm').addEventListener('submit', async (e) => {
@@ -1033,6 +1034,7 @@
       loadRewards();
       loadPurchaseRequests();
     }
+    if (newIndex === 0 && !balanceTabLoaded) { balanceTabLoaded = true; loadAllStudentsCache(); }
     if (newIndex === 4) loadGroupsAdmin();
     if (newIndex === 5) { loadRankingGroupOptions(); loadRankingWeeks(); }
     if (newIndex === 6) loadAchievementItemsAdmin();
@@ -1138,13 +1140,14 @@
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }
 
-  async function callAppsScript(payload) {
+  async function callAppsScript(payload, options = {}) {
     let session = null;
     try { session = JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY) || 'null'); } catch (_) {}
     const socialAction=['getStudentSocial','postStudentSocial','setStudentSocialLike','getSupervisorSocial','postSupervisorSocial','deleteSupervisorSocial','setSupervisorSocialPin','setSocialStageEnabled'].includes(payload.action);
     const endpoint=payload.action==='moveAchievementItem'?'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-items':socialAction?'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-social':APPS_SCRIPT_URL;
     const res = await fetch(endpoint, {
       method: 'POST',
+      signal: options.signal,
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
@@ -1153,7 +1156,7 @@
       },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) { const error = new Error('HTTP ' + res.status); error.status = res.status; throw error; }
     return res.json();
   }
 
@@ -2011,10 +2014,7 @@
   let selectedBulkIds = new Set();
   let selectedStudentId = null;
 
-  // رصيد الطلاب صار التبويب الافتراضي الأول، فنحمّل قائمة الطلاب فورًا
-  // عند فتح الصفحة، بدل انتظار ضغطة على التبويب (ما يحتاجها الآن أصلًا)
-  balanceTabLoaded = true;
-  loadAllStudentsCache();
+  // تُحمّل قائمة الطلاب عند فتح إضافة النقاط حتى لا تؤخر صفحة الرسائل.
 
   let pendingAmount = null;
   let bulkPendingAmount = null;
@@ -2979,8 +2979,7 @@
       ${(g.members || []).map((s, i) => `<div class="list-item" style="padding:10px 0;align-items:flex-start"><b style="width:26px;">${i + 1}</b><span style="flex:1;">${s.name}<small style="display:block">${((s.details||{}).items||[]).map(x=>`${x.count} ${x.label}`).join('، ')}</small>${((s.details||{}).edits||[]).map(x=>`<small style="display:block;color:var(--pink)">${x}</small>`).join('')}</span><strong>${s.balance}</strong></div>`).join('')}
     </div>`).join('');
   });
-  loadRankingGroupOptions();
-  loadRankingWeeks();
+  // Ranking data loads when its tab is opened.
 
   /* ==================== إدارة بنود النقاط حسب المرحلة ==================== */
   let achievementItemsAdminCache = [];
@@ -3141,69 +3140,144 @@
 </script>
 <script>
 (()=>{
-const el=id=>document.getElementById(id), messages=new Map(), enabled=new Map(); let mode='tweets', request=0;
-const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const key=()=>el('socialStage').value+'|'+mode+'|'+(mode==='chat'?el('socialGroup').value:'');
-function render(){
-const stage=el('socialStage').value, chat=mode==='chat', selected=el('socialGroup').value;
-el('socialGear').classList.toggle('hidden',!stage);el('socialContent').classList.toggle('hidden',!stage);el('socialWelcome').classList.toggle('hidden',!!stage);
-el('socialGroup').disabled=!stage;el('socialForm').classList.toggle('is-chat',chat);el('socialTweets').classList.toggle('active',!chat);el('socialChats').classList.toggle('active',chat);
-const feed=el('socialFeed'), form=el('socialForm');
-if(chat){if(feed.nextElementSibling!==form)feed.after(form);}else if(form.nextElementSibling!==feed)feed.before(form);
-el('socialComposeLabel').textContent=chat?'رسالة للمجموعة':'تغريدة جديدة';el('socialSend').textContent=chat?'إرسال':'نشر';el('socialText').placeholder=chat?'اكتب رسالتك للمجموعة…':'وش حاب تشارك اليوم؟';
-const active=enabled.get(stage)!==false;el('socialEnabled').checked=active;
-el('socialForm').classList.toggle('hidden',!active||(chat&&!selected));el('socialFeed').classList.toggle('social-chat',chat);
-const list=messages.get(key())||[];
-el('socialFeed').innerHTML=chat&&!selected?'<div class="social-empty">اختر مجموعة لفتح محادثتها</div>':!list.length?'<div class="social-empty">'+(chat?'بداية محادثة المجموعة':'لا توجد تغريدات في هذه المرحلة بعد')+'<br>جرّب كتابة '+(chat?'رسالة':'تغريدة')+' لرؤية شكلها</div>':list.map(m=>'<article class="social-post">'+(m.pinned?'<div class="social-pinned-label">مثبتة</div>':'')+'<div class="social-author"><span class="social-avatar">'+(/^https?:\/\//i.test(m.imageUrl||'')?'<img src="'+escape(m.imageUrl)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':'♙')+'</span><strong>'+escape(m.name)+'</strong>'+(m.supervisor?'<span class="social-badge">✓ مشرف</span>':'')+'</div><p style="white-space:pre-wrap">'+escape(m.text)+'</p><div class="social-meta"><span>'+escape(new Date(m.createdAt).toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+' · '+Number(m.likes||0)+' إعجاب</span><span>'+(!chat?'<button type="button" class="social-pin" data-social-pin="'+m.id+'" data-pinned="'+String(!!m.pinned)+'">'+(m.pinned?'إلغاء التثبيت':'تثبيت')+'</button>':'')+'<button type="button" class="social-delete" data-social-delete="'+m.id+'">حذف</button></span></div></article>').join('');
-}
-el('socialStage').onchange=async()=>{
-mode='tweets';const stage=el('socialStage').value, token=++request;el('socialSettings').classList.add('hidden');el('socialText').value='';el('socialStatus').textContent='';
-el('socialGroup').innerHTML='<option value="">جاري تحميل المجموعات…</option>';render();if(!stage)return;
-try{const data=await callAppsScript({action:'getGroups',stage});if(token!==request)return;if(!data.success)throw Error(data.message||'تعذر تحميل المجموعات');
-el('socialGroup').innerHTML='<option value="">تغريدات المرحلة</option>'+(data.groups||[]).map(g=>'<option value="'+escape(g.id)+'">'+escape(g.name)+'</option>').join('');
-if(!(data.groups||[]).length)el('socialGroup').innerHTML='<option value="">لا توجد مجموعات في المرحلة</option>';
-}catch(e){if(token===request){el('socialGroup').innerHTML='<option value="">تعذر تحميل المجموعات</option>';el('socialStatus').textContent='تعذر تحميل المجموعات. أعد اختيار المرحلة للمحاولة.';}}
-render();
-};
-el('socialGear').onclick=()=>el('socialSettings').classList.toggle('hidden');
-el('socialEnabled').onchange=async()=>{
-const stage=el('socialStage').value,box=el('socialEnabled');box.disabled=true;
-try{const data=await callAppsScript({action:'setSocialStageEnabled',stage,enabled:box.checked});if(!data.success)throw Error('تعذر حفظ الإعداد');enabled.set(stage,data.enabled);if(stage===el('socialStage').value){render();await sync();}}
-catch(e){box.checked=enabled.get(stage)!==false;el('socialStatus').textContent=e.message;}
-finally{box.disabled=false;}
-};
-el('socialTweets').onclick=()=>{mode='tweets';render();};el('socialChats').onclick=()=>{mode='chat';render();};el('socialGroup').onchange=()=>{mode=el('socialGroup').value?'chat':'tweets';el('socialText').value='';render();};
-
-let loadingToken=0,busy=false;
-async function sync(action='getSupervisorSocial',extra={}){
- const captured=key(),token=++loadingToken;
- if(!el('socialStage').value||(mode==='chat'&&!el('socialGroup').value))return;
- try{
- const data=await callAppsScript({action,stage:el('socialStage').value,channel:mode==='chat'?'chat':'tweets',groupId:mode==='chat'?el('socialGroup').value:null,...extra});
- if(!data.success)throw Error(data.error||'تعذر الاتصال');
- if(token===loadingToken&&captured===key()){enabled.set(el('socialStage').value,data.enabled);messages.set(captured,data.messages||[]);render();el('socialStatus').textContent=data.enabled?'':'التغريدات معطلة للطلاب في هذه المرحلة';}
- return true;
- }catch(e){if(token===loadingToken)el('socialStatus').textContent=e.message||'تعذر تحميل الرسائل';return false;}
-}
-el('socialForm').onsubmit=async e=>{
- e.preventDefault();const text=el('socialText').value.trim();
- if(busy||!text||!el('socialStage').value||(mode==='chat'&&!el('socialGroup').value))return;
- busy=true;el('socialSend').disabled=true;
- const captured=key();
- try{if(await sync('postSupervisorSocial',{text,messageId:crypto.randomUUID()}))if(captured===key())el('socialText').value='';}
- finally{busy=false;el('socialSend').disabled=false;}
-};
-el('socialFeed').onclick=async e=>{
-const button=e.target.closest('[data-social-delete],[data-social-pin]');if(!button||busy)return;
-busy=true;button.disabled=true;try{
-if(button.dataset.socialPin)await sync('setSupervisorSocialPin',{messageId:button.dataset.socialPin,pinned:button.dataset.pinned!=='true'});
-else await sync('deleteSupervisorSocial',{messageId:button.dataset.socialDelete});
-}finally{busy=false;button.disabled=false;}
-};
-for(const id of ['socialStage','socialGroup'])el(id).addEventListener('change',()=>sync());
-for(const id of ['socialTweets','socialChats'])el(id).addEventListener('click',()=>sync());
-setInterval(()=>{if(!busy&&!document.hidden&&document.querySelector('[data-page="7"]').style.display!=='none')sync();},12000);
-render();
+ const el=id=>document.getElementById(id),STAGES=['رابع+خامس+سادس','متوسط','ثانوي'];
+ const STORE='hawaya_supervisor_social_cache_v1',FRESH_MS=15000,MAX_AGE=24*60*60*1000;
+ const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ let stage='',mode='tweets',groupId='',epoch=0,token='',owner='',busy=false,persistTimer=null;
+ const feeds=new Map(),groups=new Map(),enabled=new Map(),inflight=new Map(),versions=new Map(),drafts=new Map(),pendingIds=new Map(),scrolls=new Map(),errors=new Map();
+ let rememberedGroups={};
+ const scope=()=>({stage,channel:mode,groupId:mode==='chat'?groupId:null});
+ const key=s=>s.stage+'|'+s.channel+'|'+(s.channel==='chat'?(s.groupId||''):'');
+ function session(){try{const s=JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY)||'null');return s?.token&&new Date(s.expiresAt).getTime()>Date.now()?s:null;}catch{return null;}}
+ function valid(run){return epoch===run&&session()?.token===token;}
+ function storeLater(){
+  clearTimeout(persistTimer);const run=epoch;
+  persistTimer=setTimeout(()=>{if(!valid(run)||!owner)return;try{
+   const saved=[...feeds].filter(([,v])=>Date.now()-v.at<MAX_AGE).sort((a,b)=>b[1].at-a[1].at).slice(0,12).map(([k,v])=>[k,{...v,messages:v.channel==='chat'?v.messages.slice(-50):v.messages.slice(0,50)}]);
+   localStorage.setItem(STORE,JSON.stringify({version:1,owner,at:Date.now(),selection:scope(),rememberedGroups,feeds:saved,groups:[...groups],enabled:[...enabled]}));
+  }catch{}},250);
+ }
+ function saveDraft(){const k=key(scope());drafts.set(k,el('socialText').value);scrolls.set(k,el('socialFeed').scrollTop);}
+ function options(){
+  const list=groups.get(stage)?.items||[],select=el('socialGroup');
+  const html='<option value="">'+(groups.has(stage)?'تغريدات المرحلة':'جاري تحميل المجموعات…')+'</option>'+list.map(g=>'<option value="'+escape(g.id)+'">'+escape(g.name)+'</option>').join('');
+  if(select.innerHTML!==html)select.innerHTML=html;
+  select.value=mode==='chat'?groupId:'';select.disabled=!stage;
+ }
+ function render(){
+  const current=scope(),k=key(current),chat=mode==='chat',entry=feeds.get(k),feed=el('socialFeed'),form=el('socialForm');
+  el('socialStage').value=stage;options();
+  el('socialGear').classList.toggle('hidden',!stage);el('socialContent').classList.toggle('hidden',!stage);el('socialWelcome').classList.toggle('hidden',!!stage);
+  form.classList.toggle('is-chat',chat);el('socialTweets').classList.toggle('active',!chat);el('socialChats').classList.toggle('active',chat);
+  el('socialTweets').setAttribute('aria-selected',String(!chat));el('socialChats').setAttribute('aria-selected',String(chat));
+  if(chat){if(feed.nextElementSibling!==form)feed.after(form);}else if(form.nextElementSibling!==feed)feed.before(form);
+  el('socialComposeLabel').textContent=chat?'رسالة للمجموعة':'تغريدة جديدة';el('socialSend').textContent=busy?'جاري الحفظ…':chat?'إرسال':'نشر';el('socialSend').disabled=busy;
+  el('socialText').placeholder=chat?'اكتب رسالتك للمجموعة…':'وش حاب تشارك اليوم؟';
+  const active=enabled.get(stage)!==false;el('socialEnabled').checked=active;el('socialEnabled').disabled=busy||!enabled.has(stage);
+  form.classList.toggle('hidden',!stage||!active||(chat&&!groupId));feed.classList.toggle('social-chat',chat);
+  const wasBottom=feed.scrollHeight-feed.scrollTop-feed.clientHeight<45,list=entry?.messages||[];
+  const html=chat&&!groupId?'<div class="social-empty">اختر مجموعة لفتح محادثتها</div>':!entry?'<div class="social-empty">جاري تحميل الرسائل…</div>':!list.length?'<div class="social-empty">'+(chat?'بداية محادثة المجموعة':'لا توجد تغريدات في هذه المرحلة بعد')+'</div>':list.map(m=>'<article class="social-post">'+(m.pinned?'<div class="social-pinned-label">مثبتة</div>':'')+'<div class="social-author"><span class="social-avatar">'+(/^https?:\/\//i.test(m.imageUrl||'')?'<img loading="lazy" src="'+escape(m.imageUrl)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':'♙')+'</span><strong>'+escape(m.name)+'</strong>'+(m.supervisor?'<span class="social-badge">✓ مشرف</span>':'')+'</div><p style="white-space:pre-wrap">'+escape(m.text)+'</p><div class="social-meta"><span>'+escape(new Date(m.createdAt).toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+(chat?'':' · '+Number(m.likes||0)+' إعجاب')+'</span><span>'+(!chat?'<button type="button" class="social-pin" data-social-pin="'+escape(m.id)+'" data-pinned="'+String(!!m.pinned)+'">'+(m.pinned?'إلغاء التثبيت':'تثبيت')+'</button>':'')+'<button type="button" class="social-delete" data-social-delete="'+escape(m.id)+'">حذف</button></span></div></article>').join('');
+  if(feed.innerHTML!==html)feed.innerHTML=html;
+  if(chat&&wasBottom)feed.scrollTop=feed.scrollHeight;
+  el('socialStatus').textContent=errors.get(stage)||(enabled.get(stage)===false?'التغريدات والمحادثات معطلة للطلاب في هذه المرحلة':'');
+  el('socialRetry').classList.toggle('hidden',!errors.has(stage));
+ }
+ function showSelection(){el('socialText').value=drafts.get(key(scope()))||'';render();el('socialFeed').scrollTop=scrolls.get(key(scope()))??(mode==='chat'?el('socialFeed').scrollHeight:0);storeLater();}
+ function abortStage(selected){const req=inflight.get(selected);req?.controller.abort();inflight.delete(selected);versions.set(selected,(versions.get(selected)||0)+1);}
+ function clearMemory(){
+  epoch++;for(const req of inflight.values())req.controller.abort();clearTimeout(persistTimer);
+  for(const map of [feeds,groups,enabled,inflight,versions,drafts,pendingIds,scrolls,errors])map.clear();
+  stage='';mode='tweets';groupId='';token='';owner='';busy=false;rememberedGroups={};el('socialText').value='';el('socialSettings').classList.add('hidden');render();
+ }
+ function expireSession(){clearMemory();try{localStorage.removeItem(STORE);localStorage.removeItem(SUPERVISOR_SESSION_KEY);}catch{}showSupervisorLogin('انتهت جلسة المشرف، سجل الدخول مجددًا');}
+ async function start(){
+  clearMemory();const saved=session();if(!saved){try{localStorage.removeItem(STORE);}catch{}return;}
+  token=saved.token;const run=epoch;
+  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));if(!valid(run))return;
+  owner=Array.from(new Uint8Array(hash)).map(x=>x.toString(16).padStart(2,'0')).join('');
+  try{
+   const stored=JSON.parse(localStorage.getItem(STORE)||'null');
+   if(stored?.version===1&&stored.owner===owner&&Date.now()-stored.at<MAX_AGE){
+    for(const [k,v] of stored.feeds||[])if(STAGES.includes(v.stage)&&['tweets','chat'].includes(v.channel)&&Array.isArray(v.messages)&&Date.now()-v.at<MAX_AGE)feeds.set(k,v);
+    for(const [s,v] of stored.groups||[])if(STAGES.includes(s)&&Array.isArray(v.items))groups.set(s,v);
+    for(const [s,v] of stored.enabled||[])if(STAGES.includes(s)&&typeof v==='boolean')enabled.set(s,v);
+    rememberedGroups=stored.rememberedGroups||{};
+    if(STAGES.includes(stored.selection?.stage)){stage=stored.selection.stage;mode=stored.selection.channel==='chat'?'chat':'tweets';groupId=mode==='chat'?stored.selection.groupId||'':'';}
+   }else localStorage.removeItem(STORE);
+  }catch{}
+  showSelection();if(stage)read(true);
+ }
+ function read(force=false){
+  if(!stage||!owner||!session()||busy)return Promise.resolve(false);
+  const selected=stage,current=scope(),currentKey=key(current),entry=feeds.get(currentKey),groupInfo=groups.get(selected);
+  if(inflight.has(selected))return inflight.get(selected).promise;
+  if(!force&&entry&&groupInfo&&Date.now()-entry.at<FRESH_MS&&Date.now()-groupInfo.at<FRESH_MS)return Promise.resolve(true);
+  const run=epoch,version=versions.get(selected)||0,controller=new AbortController();errors.delete(selected);
+  const timer=setTimeout(()=>controller.abort(),25000);
+  const request={controller,promise:null};
+  request.promise=(async()=>{
+   let success=false;
+   try{
+    const data=await callAppsScript({action:'getSupervisorSocial',stage:selected,groupId:current.groupId||rememberedGroups[selected]||null,prefetch:true},{signal:controller.signal});
+    if(!valid(run)||version!==(versions.get(selected)||0))return false;
+    if(!data.success)throw Error(data.error||'تعذر تحميل الرسائل');
+    if(!Array.isArray(data.groups)||!Array.isArray(data.feeds))throw Error('أعد تحديث التطبيق للحصول على النسخة الجديدة');
+    const at=Date.now(),ids=new Set(data.groups.map(g=>g.id));groups.set(selected,{items:data.groups,at});enabled.set(selected,data.enabled);
+    for(const [k,v] of feeds)if(v.stage===selected&&v.channel==='chat'&&!ids.has(v.groupId))feeds.delete(k);
+    if(rememberedGroups[selected]&&!ids.has(rememberedGroups[selected]))delete rememberedGroups[selected];
+    for(const f of data.feeds)if(['tweets','chat'].includes(f.channel)&&Array.isArray(f.messages)){
+     const s={stage:selected,channel:f.channel,groupId:f.channel==='chat'?f.groupId:null};feeds.set(key(s),{...s,messages:f.messages,at});
+    }
+    if(stage===selected){if(mode==='chat'&&groupId&&!ids.has(groupId)){groupId='';mode='tweets';el('socialText').value=drafts.get(key(scope()))||'';}render();}
+    storeLater();success=true;return true;
+   }catch(error){
+    if(valid(run)&&version===(versions.get(selected)||0)){
+     if(error.status===401){expireSession();return false;}
+     errors.set(selected,feeds.has(currentKey)?'تعذر تحديث الرسائل. يمكنك إعادة المحاولة.':'تعذر تحميل الرسائل. حاول مرة أخرى.');if(stage===selected)render();
+    }return false;
+   }finally{
+    clearTimeout(timer);if(inflight.get(selected)===request)inflight.delete(selected);
+    // A group selected during an earlier load gets its own request only if absent.
+    if(success&&valid(run)&&stage===selected&&mode==='chat'&&groupId&&(!feeds.has(key(scope()))||Date.now()-feeds.get(key(scope())).at>=FRESH_MS))read();
+   }
+  })();inflight.set(selected,request);return request.promise;
+ }
+ function switchStage(){saveDraft();stage=el('socialStage').value;mode='tweets';groupId='';el('socialSettings').classList.add('hidden');showSelection();read();}
+ function switchMode(next,id){saveDraft();mode=next;groupId=next==='chat'?(id||rememberedGroups[stage]||groups.get(stage)?.items[0]?.id||''):'';if(groupId)rememberedGroups[stage]=groupId;showSelection();read();}
+ async function mutate(action,extra){
+  if(busy||!stage||!owner||(mode==='chat'&&!groupId&&action!=='setSocialStageEnabled'))return false;
+  const selected=scope(),k=key(selected),run=epoch;busy=true;abortStage(selected.stage);errors.delete(selected.stage);render();
+  try{
+   const data=await callAppsScript({action,...selected,...extra});if(!valid(run))return false;
+   if(!data.success)throw Error(data.error||'تعذر الحفظ');enabled.set(selected.stage,data.enabled);
+   if(Array.isArray(data.messages))feeds.set(k,{...selected,messages:data.messages,at:Date.now()});
+   if(action==='postSupervisorSocial'&&(drafts.get(k)||'').trim()===extra.text){drafts.delete(k);pendingIds.delete(k);if(key(scope())===k)el('socialText').value='';}
+   if(stage===selected.stage)render();storeLater();return true;
+  }catch(error){if(valid(run)){if(error.status===401){expireSession();return false;}errors.set(selected.stage,error.message||'تعذر الحفظ');if(stage===selected.stage)render();}return false;}
+  finally{if(valid(run)){busy=false;render();if(!feeds.has(key(scope())))read();}}
+ }
+ el('socialStage').onchange=switchStage;el('socialGroup').onchange=()=>switchMode(el('socialGroup').value?'chat':'tweets',el('socialGroup').value);
+ el('socialTweets').onclick=()=>switchMode('tweets');el('socialChats').onclick=()=>switchMode('chat');
+ el('socialGear').onclick=()=>el('socialSettings').classList.toggle('hidden');
+ el('socialEnabled').onchange=()=>mutate('setSocialStageEnabled',{enabled:el('socialEnabled').checked});
+ el('socialRetry').onclick=()=>read(true);
+ el('socialText').oninput=()=>{drafts.set(key(scope()),el('socialText').value);pendingIds.delete(key(scope()));};
+ el('socialForm').onsubmit=async e=>{
+  e.preventDefault();const k=key(scope()),text=el('socialText').value.trim();if(!text||busy)return;
+  drafts.set(k,el('socialText').value);if(!pendingIds.has(k))pendingIds.set(k,crypto.randomUUID());
+  if(await mutate('postSupervisorSocial',{text,messageId:pendingIds.get(k)}))if(key(scope())===k&&mode==='chat')el('socialFeed').scrollTop=el('socialFeed').scrollHeight;
+ };
+ el('socialFeed').onclick=async e=>{const b=e.target.closest('[data-social-delete],[data-social-pin]');if(!b||busy)return;
+  b.disabled=true;try{if(b.dataset.socialPin)await mutate('setSupervisorSocialPin',{messageId:b.dataset.socialPin,pinned:b.dataset.pinned!=='true'});else await mutate('deleteSupervisorSocial',{messageId:b.dataset.socialDelete});}finally{b.disabled=false;}
+ };
+ window.resetSupervisorSocial=start;
+ el('supervisorLogoutBtn').addEventListener('click',()=>{clearMemory();try{localStorage.removeItem(STORE);}catch{}});
+ document.querySelector('[data-index="7"]').addEventListener('click',()=>{render();read();});
+ window.addEventListener('storage',e=>{if(e.key===SUPERVISOR_SESSION_KEY){clearMemory();try{localStorage.removeItem(STORE);}catch{}}});
+ setInterval(()=>{if(!document.hidden&&!el('appView').classList.contains('hidden')&&currentIndex===7)read();},FRESH_MS);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentIndex===7)read();});
+ start();
 })();
 </script></body>
 </html>
+

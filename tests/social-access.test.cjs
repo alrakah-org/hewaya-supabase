@@ -164,3 +164,26 @@ test('invalid credentials cannot prefetch either feed',async()=>{
  const h=harness(),{data}=await h.call('getStudentSocial',{prefetch:true,password:'wrong'});
  assert.equal(data.success,false);assert.equal(data.channels,undefined);assert.equal(h.reads.length,1);
 });
+
+
+
+test('supervisor overview requires a supervisor session',async()=>{
+ const h=harness(),r=await h.call('getSupervisorSocial',{prefetch:true,stage:'middle'});
+ assert.equal(r.status,401);assert.equal(h.reads.length,0);
+});
+test('supervisor overview reads only selected-stage groups with one session check',async()=>{
+ const h=harness(),{data}=await h.call('getSupervisorSocial',{prefetch:true,stage:'middle'},true);
+ assert.equal(data.success,true);assert.deepEqual(data.groups.map(g=>g.id),[G1]);
+ assert.deepEqual(data.feeds[0].messages.map(m=>m.id),[M1]);assert.deepEqual(data.feeds[1].messages.map(m=>m.id),[M3]);
+ assert.equal(h.reads.filter(r=>r.path==='/rpc/edge_supervisor_session').length,1);
+ assert.equal(h.reads.filter(r=>r.path==='/students'||r.path==='/group_memberships').length,0);
+});
+test('overview does not read a requested foreign-stage group',async()=>{
+ const h=harness(),{data}=await h.call('getSupervisorSocial',{prefetch:true,stage:'middle',groupId:G2},true);
+ assert.equal(data.feeds.length,1);assert.equal(data.feeds[0].channel,'tweets');
+ assert.equal(data.feeds[0].messages.some(m=>m.id===M4),false);
+});
+test('disabled stage retains supervisor moderation feed',async()=>{
+ const h=harness({enabled:false}),{data}=await h.call('getSupervisorSocial',{prefetch:true,stage:'middle'},true);
+ assert.equal(data.enabled,false);assert.deepEqual(data.feeds[0].messages.map(m=>m.id),[M1]);
+});
