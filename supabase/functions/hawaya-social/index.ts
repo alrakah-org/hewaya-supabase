@@ -3,7 +3,7 @@ declare const Deno: { env: { get(name: string): string | undefined }; serve(hand
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const REST = `${SUPABASE_URL}/rest/v1`;
-const API_VERSION = 'social-live-20261005';
+const API_VERSION = 'social-fast-tabs-20261009';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -128,7 +128,7 @@ function socialUuid(value: unknown) {
 
 async function socialContext(body:any, supervisor:any=null) {
  const channel=body.channel==='chat'?'chat':'tweets';
- let stage='',student:any=null,group:any=null;
+ let stage='',student:any=null,group:any=null,setting:any=null;
  if(supervisor){
   stage=pointStage(body.stage)||'';
   if(!stage)return {error:'اختر المرحلة أولًا'};
@@ -139,13 +139,20 @@ async function socialContext(body:any, supervisor:any=null) {
   }
  }else{
   const sid=await verifyStudent(body);if(!sid)return {error:'بيانات الدخول غير صحيحة'};
-  student=(await rows(`/students?id=eq.${sid}&active=eq.true&select=id,full_name,grade,photo_url`))[0];
+  const [students,memberships]=await Promise.all([
+   rows(`/students?id=eq.${sid}&active=eq.true&select=id,full_name,grade,photo_url`),
+   rows(`/group_memberships?student_id=eq.${sid}&left_at=is.null&select=group_id&limit=1`)
+  ]);
+  student=students[0];
   if(!student)return {error:'حساب الطالب غير متاح'};
   stage=stageCategory(student.grade);
-  const membership=(await rows(`/group_memberships?student_id=eq.${sid}&left_at=is.null&select=group_id&limit=1`))[0];
-  if(membership)group=(await rows(`/groups?id=eq.${membership.group_id}&active=eq.true&select=id,name`))[0]||null;
+  const [settings,groups]=await Promise.all([
+   rows(`/tweet_stage_settings?stage_category=eq.${stage}&select=enabled`),
+   memberships[0]?rows(`/groups?id=eq.${memberships[0].group_id}&active=eq.true&select=id,name`):Promise.resolve([])
+  ]);
+  setting=settings[0];group=groups[0]||null;
  }
- const setting=(await rows(`/tweet_stage_settings?stage_category=eq.${stage}&select=enabled`))[0];
+ if(supervisor)setting=(await rows(`/tweet_stage_settings?stage_category=eq.${stage}&select=enabled`))[0];
  const enabled=setting?.enabled===true;
  const filter=channel==='tweets'?`stage_category=eq.${stage}&channel=eq.tweets&group_id=is.null&deleted_at=is.null`:
   group?`group_id=eq.${group.id}&channel=eq.chat&deleted_at=is.null`:null;
@@ -155,7 +162,7 @@ async function socialContext(body:any, supervisor:any=null) {
 async function socialFeed(ctx:any) {
  if(!ctx.filter)return [];
  const list=await rows(`/hawaya_social_messages?${ctx.filter}&order=${ctx.channel==='tweets'?'pinned_at.desc.nullslast,':''}created_at.desc,id.desc&limit=100&select=id,body,author_name,author_student_id,author_supervisor_id,created_at,pinned_at,students:students!hawaya_social_messages_author_student_id_fkey(photo_url)`);
- const likes=list.length?await rows(`/hawaya_social_likes?message_id=in.(${list.map((m:any)=>m.id).join(',')})&select=message_id,student_id&limit=20000`):[];
+ const likes=ctx.channel==='tweets'&&list.length?await rows(`/hawaya_social_likes?message_id=in.(${list.map((m:any)=>m.id).join(',')})&select=message_id,student_id&limit=20000`):[];
  const count:Record<string,number>={},liked=new Set();
  for(const like of likes){count[like.message_id]=(count[like.message_id]||0)+1;if(like.student_id===ctx.student?.id)liked.add(like.message_id);}
  if(ctx.channel==='chat')list.reverse();
@@ -166,8 +173,16 @@ async function socialFeed(ctx:any) {
 
 async function socialAction(body:any,supervisor:any=null) {
  const ctx:any=await socialContext(body,supervisor);if(ctx.error)return {success:false,error:ctx.error};
- const info={stage:ctx.stage,stageLabel:categoryLabel(ctx.stage),enabled:ctx.enabled,hasGroup:!!ctx.group,groupName:ctx.group?.name||''};
+ const info={stage:ctx.stage,stageLabel:categoryLabel(ctx.stage),enabled:ctx.enabled,hasGroup:!!ctx.group,groupId:ctx.group?.id||null,groupName:ctx.group?.name||''};
  const action=String(body.action);
+ // Both student tabs share one identity check and one settings/membership lookup.
+ if(!supervisor&&action==='getStudentSocial'&&body.prefetch===true){
+  const tweetCtx={...ctx,channel:'tweets',filter:`stage_category=eq.${ctx.stage}&channel=eq.tweets&group_id=is.null&deleted_at=is.null`};
+  const chatCtx={...ctx,channel:'chat',filter:ctx.group?`group_id=eq.${ctx.group.id}&channel=eq.chat&deleted_at=is.null`:null};
+  const [tweets,chat]=ctx.enabled?await Promise.all([socialFeed(tweetCtx),socialFeed(chatCtx)]):[[],[]];
+  const channels={tweets:{...info,messages:tweets},chat:{...info,messages:chat}};
+  return {success:true,...channels[ctx.channel as 'tweets'|'chat'],channels};
+ }
  if(!supervisor&&!ctx.enabled)return {success:true,...info,messages:[]};
  if(ctx.channel==='chat'&&!ctx.group)return {success:action.startsWith('get'),...info,messages:[],error:'لم تتم إضافتك إلى مجموعة بعد'};
  if(action==='postStudentSocial'||action==='postSupervisorSocial'){
@@ -222,3 +237,4 @@ Deno.serve(async(req)=>{
   return json({success:false,error:'إجراء غير معروف'},400);
  }catch(error){console.error(error);return json({success:false,error:'تعذر الاتصال بخدمة التغريدات'},500);}
 });
+

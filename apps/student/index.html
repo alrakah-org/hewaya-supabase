@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta name="hawaya-version" content="social-scope-fix-20261006">
+<meta name="hawaya-version" content="social-fast-tabs-20261009">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>هواية</title>
@@ -641,6 +641,7 @@
         </div>
         <p id="studentSocialGroupName" class="student-social-caption hidden"></p>
         <p id="studentSocialMessage" role="status" aria-live="polite" class="student-social-caption"></p>
+        <button id="studentSocialRetry" type="button" class="hidden" style="width:auto;font-size:12px;padding:7px 16px;margin:0 0 10px;">إعادة المحاولة</button>
         <form id="studentSocialForm" class="hidden">
           <label for="studentSocialText" class="social-sr-only">اكتب تغريدتك</label>
           <div class="student-social-compose">
@@ -1100,7 +1101,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   });
 
   // ====== استدعاء الخادم ======
-  async function callAppsScript(payload) {
+  async function callAppsScript(payload, options = {}) {
     const saved = getSession();
     if (saved) {
       if (!payload.id) payload.id = saved.id;
@@ -1110,6 +1111,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     const endpoint=socialAction?'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-social':APPS_SCRIPT_URL;
     const res = await fetch(endpoint, {
       method: 'POST',
+      signal: options.signal,
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
@@ -1600,53 +1602,116 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
 
 (()=>{
  const el=id=>document.getElementById(id),esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let channel='tweets',seq=0,busy=false,allowed=false,items=[],pendingId=null;
+ const FRESH_MS=15000;
+ let channel='tweets',generation=0,revision=0,busy=false,allowed=false,items=[],readTask=null,readController=null;
+ let cache={},drafts={tweets:'',chat:''},pendingIds={tweets:null,chat:null},chatScroll=null;
  const avatar=url=>/^https?:\/\//i.test(url||'')?'<img src="'+esc(url)+'" alt="" loading="lazy">':'🧒';
  function timestamp(value){const time=new Date(value);return isNaN(time.getTime())?'':time.toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
- function render(data){
-  const chat=channel==='chat', feed=el('studentSocialFeed'),form=el('studentSocialForm');
+ function status(message='',retry=false){el('studentSocialMessage').textContent=message;el('studentSocialRetry').classList.toggle('hidden',!retry);}
+ function render(){
+  const data=cache[channel]?.data,chat=channel==='chat',feed=el('studentSocialFeed'),form=el('studentSocialForm');
   el('studentTweetsTab').classList.toggle('active',!chat);el('studentChatTab').classList.toggle('active',chat);
   el('studentTweetsTab').setAttribute('aria-selected',String(!chat));el('studentChatTab').setAttribute('aria-selected',String(chat));
-  el('studentSocialStage').textContent=data.stageLabel||currentStudentStage;
-  el('studentSocialGroupName').classList.toggle('hidden',!chat);el('studentSocialGroupName').textContent=data.groupName||'';
-  el('studentSocialSend').textContent=chat?'إرسال':'نشر';el('studentSocialText').placeholder=chat?'اكتب رسالتك للمجموعة…':'وش حاب تشارك اليوم؟';
+  el('studentSocialStage').textContent=data?.stageLabel||currentStudentStage;
+  el('studentSocialGroupName').classList.toggle('hidden',!chat);el('studentSocialGroupName').textContent=data?.groupName||'';
+  el('studentSocialSend').textContent=chat?'إرسال':'نشر';el('studentSocialSend').disabled=busy;
+  el('studentSocialText').placeholder=chat?'اكتب رسالتك للمجموعة…':'وش حاب تشارك اليوم؟';
   form.querySelector('label').textContent=chat?'اكتب رسالتك':'اكتب تغريدتك';
   el('studentSocialFeedTitle').textContent=chat?'محادثة مجموعتي':'أحدث التغريدات';
   form.classList.toggle('is-chat',chat);feed.classList.toggle('is-chat',chat);
   if(chat){if(feed.nextElementSibling!==form)feed.after(form);}else{const title=el('studentSocialFeedTitle');if(form.nextElementSibling!==title)title.before(form);}
-  allowed=data.enabled===true&&(!chat||data.hasGroup===true);form.classList.toggle('hidden',!allowed);
-  el('studentSocialMessage').textContent=!data.enabled?'التغريدات معطلة حاليًا لهذه المرحلة':chat&&!data.hasGroup?'لم تتم إضافتك إلى مجموعة بعد':'';
+  allowed=data?.enabled===true&&(!chat||data.hasGroup===true);form.classList.toggle('hidden',!allowed);
+  status(!data?'جاري التحميل…':!data.enabled?(chat?'المحادثات معطلة حاليًا لهذه المرحلة':'التغريدات معطلة حاليًا لهذه المرحلة'):chat&&!data.hasGroup?'لم تتم إضافتك إلى مجموعة بعد':'');
   const wasBottom=feed.scrollHeight-feed.scrollTop-feed.clientHeight<45;
-  items=data.messages||[];
-  feed.innerHTML=items.length?items.map(m=>'<article class="student-social-post '+(m.mine?'mine':'')+'">'+(m.pinned?'<div class="student-pinned-label">مثبتة</div>':'')+'<div class="student-social-author"><span class="student-social-avatar">'+avatar(m.imageUrl)+'</span><div><strong>'+esc(m.name)+'</strong><time class="student-social-time">'+esc(timestamp(m.createdAt))+'</time></div>'+(m.supervisor?'<span class="student-social-badge">✓ مشرف</span>':'')+'</div><p>'+esc(m.text)+'</p>'+(!chat?'<button type="button" class="student-social-like '+(m.liked?'liked':'')+'" data-like="'+esc(m.id)+'" aria-label="إعجاب" aria-pressed="'+String(!!m.liked)+'">'+(m.liked?'♥':'♡')+' '+Number(m.likes||0)+'</button>':'')+'</article>').join(''):allowed?'<p class="student-social-caption">'+(chat?'ابدأ المحادثة مع مجموعتك':'كن أول من يشارك تغريدة في مرحلتك')+'</p>':'';
+  items=data?.messages||[];
+  const html=items.length?items.map(m=>'<article class="student-social-post '+(m.mine?'mine':'')+'">'+(m.pinned?'<div class="student-pinned-label">مثبتة</div>':'')+'<div class="student-social-author"><span class="student-social-avatar">'+avatar(m.imageUrl)+'</span><div><strong>'+esc(m.name)+'</strong><time class="student-social-time">'+esc(timestamp(m.createdAt))+'</time></div>'+(m.supervisor?'<span class="student-social-badge">✓ مشرف</span>':'')+'</div><p>'+esc(m.text)+'</p>'+(!chat?'<button type="button" class="student-social-like '+(m.liked?'liked':'')+'" data-like="'+esc(m.id)+'" aria-label="إعجاب" aria-pressed="'+String(!!m.liked)+'">'+(m.liked?'♥':'♡')+' '+Number(m.likes||0)+'</button>':'')+'</article>').join(''):allowed?'<p class="student-social-caption">'+(chat?'ابدأ المحادثة مع مجموعتك':'كن أول من يشارك تغريدة في مرحلتك')+'</p>':'';
+  if(feed.innerHTML!==html)feed.innerHTML=html;
   if(chat&&wasBottom)feed.scrollTop=feed.scrollHeight;
  }
- async function load(action='getStudentSocial',extra={}){
-  const session=getSession();if(!session)return false;
-  const token=++seq, captured=channel;
-  try{
-   const data=await callAppsScript({action,channel:captured,...extra});
-   if(token!==seq||captured!==channel||getSession()?.id!==session.id)return false;
-   if(!data.success)throw Error(data.error||'تعذر الاتصال');
-   render(data);return data.enabled===true;
-  }catch(error){if(token===seq){el('studentSocialMessage').textContent=error.message||'تعذر تحميل التغريدات';if(action==='getStudentSocial'){allowed=false;el('studentSocialForm').classList.add('hidden');}}return false;}
+ function sameSession(session,epoch){const now=getSession();return generation===epoch&&now?.id===session.id&&now?.pw===session.pw;}
+ function remember(data,target){
+  const now=Date.now(),other=target==='tweets'?'chat':'tweets';
+  if(data.channels){for(const name of ['tweets','chat'])if(data.channels[name])cache[name]={data:data.channels[name],at:now};return;}
+  cache[target]={data,at:now};
+  // Stage settings and group membership apply to both tabs, including after a write.
+  if(cache[other]){
+   const previous=cache[other].data,scopeChanged=previous.stage!==data.stage||(other==='chat'&&previous.groupId!==data.groupId);
+   if(scopeChanged){delete cache[other];}
+   else cache[other]={...cache[other],data:{...previous,enabled:data.enabled,hasGroup:data.hasGroup,groupId:data.groupId,groupName:data.groupName,messages:!data.enabled||(other==='chat'&&!data.hasGroup)?[]:previous.messages}};
+  }
+  if(!data.enabled||(other==='chat'&&!data.hasGroup))cache[other]={data:{...data,messages:[]},at:now};
  }
- function change(next){if(busy)return;channel=next;seq++;items=[];pendingId=null;el('studentSocialText').value='';allowed=false;el('studentSocialForm').classList.add('hidden');el('studentSocialFeed').innerHTML='';el('studentSocialMessage').textContent='جاري التحميل…';load();}
+ function read(force=false){
+  const session=getSession();if(!session||busy)return Promise.resolve(false);
+  if(readTask)return readTask;
+  if(!force&&cache[channel]&&Date.now()-cache[channel].at<FRESH_MS)return Promise.resolve(true);
+  const epoch=generation,version=revision,target=channel,controller=new AbortController();readController=controller;
+  const timer=setTimeout(()=>controller.abort(),25000);
+  const task=(async()=>{
+   try{
+    const data=await callAppsScript({action:'getStudentSocial',channel:target,prefetch:true},{signal:controller.signal});
+    if(!sameSession(session,epoch)||revision!==version)return false;
+    if(!data.success)throw Error(data.error||'تعذر تحميل التغريدات');
+    remember(data,target);render();return true;
+   }catch(error){
+    if(sameSession(session,epoch)&&revision===version)status(cache[channel]?'تعذر التحديث. يمكنك إعادة المحاولة.':'تعذر التحميل. حاول مرة أخرى.',true);
+    return false;
+   }finally{
+    clearTimeout(timer);
+    if(readTask===task){readTask=null;readController=null;}
+   }
+  })();
+  readTask=task;return task;
+ }
+ function change(next){
+  if(channel!==next){
+   drafts[channel]=el('studentSocialText').value;
+   if(channel==='chat')chatScroll=el('studentSocialFeed').scrollTop;
+   channel=next;el('studentSocialText').value=drafts[next];render();
+   if(next==='chat')el('studentSocialFeed').scrollTop=chatScroll??el('studentSocialFeed').scrollHeight;
+  }
+  read();
+ }
+ async function mutate(action,extra){
+  const session=getSession();if(!session||busy||!allowed)return false;
+  const target=channel,epoch=generation;busy=true;revision++;
+  readController?.abort();readTask=null;readController=null;el('studentSocialSend').disabled=true;
+  try{
+   const data=await callAppsScript({action,channel:target,...extra});
+   if(!sameSession(session,epoch))return false;
+   if(!data.success)throw Error(data.error||'تعذر الحفظ');
+   remember(data,target);
+   if(data.enabled===true&&action==='postStudentSocial'&&drafts[target].trim()===extra.text){
+    drafts[target]='';pendingIds[target]=null;if(channel===target)el('studentSocialText').value='';
+   }
+   render();return data.enabled===true;
+  }catch(error){if(sameSession(session,epoch)&&channel===target)status(error.message||'تعذر الحفظ. حاول مرة أخرى.');return false;}
+  finally{if(sameSession(session,epoch)){busy=false;el('studentSocialSend').disabled=false;if(!cache[channel])read();}}
+ }
  el('studentTweetsTab').onclick=()=>change('tweets');el('studentChatTab').onclick=()=>change('chat');
- el('studentSocialText').oninput=()=>{pendingId=null;};
+ el('studentSocialRetry').onclick=()=>read(true);
+ el('studentSocialText').oninput=()=>{drafts[channel]=el('studentSocialText').value;pendingIds[channel]=null;};
  el('studentSocialForm').onsubmit=async e=>{
-  e.preventDefault();const text=el('studentSocialText').value.trim();if(busy||!allowed||!text)return;
-  busy=true;el('studentSocialSend').disabled=true;seq++;pendingId=pendingId||crypto.randomUUID();
-  try{if(await load('postStudentSocial',{text,messageId:pendingId})){el('studentSocialText').value='';pendingId=null;if(channel==='chat'){const f=el('studentSocialFeed');f.scrollTop=f.scrollHeight;}}}finally{busy=false;el('studentSocialSend').disabled=false;}
+  e.preventDefault();const target=channel,text=el('studentSocialText').value.trim();if(busy||!allowed||!text)return;
+  drafts[target]=el('studentSocialText').value;pendingIds[target]=pendingIds[target]||crypto.randomUUID();
+  if(await mutate('postStudentSocial',{text,messageId:pendingIds[target]}))if(channel===target&&target==='chat'){const feed=el('studentSocialFeed');feed.scrollTop=feed.scrollHeight;}
  };
  el('studentSocialFeed').onclick=async e=>{
   const b=e.target.closest('[data-like]');if(!b||busy||!allowed)return;const m=items.find(x=>x.id===b.dataset.like);if(!m)return;
-  busy=true;b.disabled=true;try{await load('setStudentSocialLike',{messageId:m.id,liked:!m.liked});}finally{busy=false;b.disabled=false;}
+  b.disabled=true;try{await mutate('setStudentSocialLike',{messageId:m.id,liked:!m.liked});}finally{b.disabled=false;}
  };
- window.resetStudentSocial=()=>{seq++;channel='tweets';items=[];pendingId=null;allowed=false;el('studentSocialText').value='';el('studentSocialFeed').innerHTML='';el('studentSocialForm').classList.add('hidden');const avatarEl=el('studentSocialAvatar'),photo=document.getElementById('infoAvatar').style.backgroundImage;avatarEl.style.backgroundImage=photo;avatarEl.style.backgroundSize='cover';avatarEl.style.backgroundPosition='center';avatarEl.textContent=photo?'':'🧒';load();};
- document.querySelector('[data-index="5"]').addEventListener('click',()=>{if(!busy)load();});
- document.getElementById('logoutBtn').addEventListener('click',()=>{seq++;items=[];el('studentSocialFeed').innerHTML='';el('studentSocialText').value='';allowed=false;});
- setInterval(()=>{if(!busy&&!document.hidden&&currentIndex===5&&!appView.classList.contains('hidden'))load();},12000);
+ function reset(){
+  generation++;revision++;readController?.abort();readTask=null;readController=null;
+  cache={};drafts={tweets:'',chat:''};pendingIds={tweets:null,chat:null};chatScroll=null;channel='tweets';busy=false;items=[];allowed=false;
+  el('studentSocialText').value='';render();
+ }
+ window.resetStudentSocial=()=>{
+  reset();const avatarEl=el('studentSocialAvatar'),photo=document.getElementById('infoAvatar').style.backgroundImage;
+  avatarEl.style.backgroundImage=photo;avatarEl.style.backgroundSize='cover';avatarEl.style.backgroundPosition='center';avatarEl.textContent=photo?'':'🧒';read();
+ };
+ document.querySelector('[data-index="5"]').addEventListener('click',()=>read());
+ document.getElementById('logoutBtn').addEventListener('click',reset);
+ setInterval(()=>{if(!document.hidden&&currentIndex===5&&!appView.classList.contains('hidden'))read();},FRESH_MS);
 })();
 
   setupStudentInfoLayout();
@@ -1655,3 +1720,4 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
 </script>
 </body>
 </html>
+

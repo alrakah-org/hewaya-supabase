@@ -14,9 +14,10 @@ function harness({enabled=true}={}){
  {id:M2,stage_category:'elementary_456',channel:'tweets',group_id:null,deleted_at:null,body:'مرحلة أخرى',created_at:'2026-10-05T14:01:00Z'},
  {id:M3,stage_category:'middle',channel:'chat',group_id:G1,deleted_at:null,body:'مجموعتي',created_at:'2026-10-05T14:00:00Z'},
  {id:M4,stage_category:'elementary_456',channel:'chat',group_id:G2,deleted_at:null,body:'مجموعة أخرى',created_at:'2026-10-05T14:00:00Z'}]};
- const writes=[];
+ const writes=[],reads=[];
  const fetch=async(url,init={})=>{
   const u=new URL(url),p=u.pathname.replace('/rest/v1',''),method=init.method||'GET',body=init.body?JSON.parse(init.body):null;
+  reads.push({path:p,method,body});
   let result;
   if(p==='/rpc/edge_student_verify')result=body.p_code==='one'&&body.p_password==='synthetic'?1:0;
   else if(p==='/rpc/edge_supervisor_session')result=[{supervisor_id:'30000000-0000-4000-8000-000000000001',supervisor_name:'مشرف تجريبي'}];
@@ -45,7 +46,7 @@ function harness({enabled=true}={}){
   const response=await handler(new Request('https://example.test/api',{method:'POST',headers:{'Content-Type':'application/json',...(supervisor?{'x-hawaya-session':'synthetic-session'}:{})},body:JSON.stringify({action,id:'one',password:'synthetic',...extra})}));
   return {status:response.status,data:await response.json()};
  };
- return {call,tables,writes};
+ return {call,tables,writes,reads};
 }
 test('student stage is derived server-side and ignores tampered stage',async()=>{
  const h=harness(),{data}=await h.call('getStudentSocial',{stage:'elementary_456'});
@@ -130,4 +131,36 @@ test('student cannot inject pin fields while posting',async()=>{
  await h.call('postStudentSocial',{messageId:id,text:'ordinary',pinned:true,pinned_at:'2026-10-05',pinned_by:'forged'});
  const m=h.tables.hawaya_social_messages.find(m=>m.id===id);
  assert.equal(m.pinned_at,undefined);assert.equal(m.pinned_by,undefined);
+});
+
+
+
+test('prefetch authenticates once and returns only own stage and group',async()=>{
+ const h=harness(),{data}=await h.call('getStudentSocial',{prefetch:true,stage:'secondary',groupId:G2});
+ assert.deepEqual(data.channels.tweets.messages.map(x=>x.id),[M1]);
+ assert.deepEqual(data.channels.chat.messages.map(x=>x.id),[M3]);
+ assert.equal(data.channels.chat.groupId,G1);
+ assert.equal(h.reads.filter(x=>x.path==='/rpc/edge_student_verify').length,1);
+ assert.equal(h.reads.filter(x=>x.path==='/hawaya_social_likes').length,1);
+ assert.equal(h.writes.length,0);
+});
+test('disabled prefetch gives both empty tabs without querying messages',async()=>{
+ const h=harness({enabled:false}),{data}=await h.call('getStudentSocial',{prefetch:true});
+ assert.equal(data.channels.tweets.enabled,false);assert.equal(data.channels.chat.enabled,false);
+ assert.deepEqual(data.channels.tweets.messages,[]);assert.deepEqual(data.channels.chat.messages,[]);
+ assert.equal(h.reads.filter(x=>x.path==='/hawaya_social_messages').length,0);
+});
+test('prefetch with no membership never reads other groups',async()=>{
+ const h=harness();h.tables.group_memberships=[];
+ const {data}=await h.call('getStudentSocial',{prefetch:true,channel:'chat',groupId:G2});
+ assert.deepEqual(data.channels.chat.messages,[]);assert.equal(data.channels.chat.hasGroup,false);
+ assert.deepEqual(data.channels.tweets.messages.map(x=>x.id),[M1]);
+});
+test('chat reads skip tweet like queries',async()=>{
+ const h=harness();await h.call('getStudentSocial',{channel:'chat'});
+ assert.equal(h.reads.filter(x=>x.path==='/hawaya_social_likes').length,0);
+});
+test('invalid credentials cannot prefetch either feed',async()=>{
+ const h=harness(),{data}=await h.call('getStudentSocial',{prefetch:true,password:'wrong'});
+ assert.equal(data.success,false);assert.equal(data.channels,undefined);assert.equal(h.reads.length,1);
 });

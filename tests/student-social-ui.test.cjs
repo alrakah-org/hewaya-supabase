@@ -31,7 +31,8 @@ const settle=()=>new Promise(r=>setTimeout(r,30));
  assert.equal(d.getElementById('studentSocialFeed').nextElementSibling.id,'studentSocialForm');
  d.getElementById('studentTweetsTab').click();await settle();
  assert.equal(d.getElementById('studentSocialForm').nextElementSibling.id,'studentSocialFeedTitle');
- const social=requests.filter(r=>r.p.action.includes('Social'));assert.ok(social.length>=5);
+ const social=requests.filter(r=>r.p.action.includes('Social'));assert.equal(social.filter(r=>r.p.action==='getStudentSocial').length,2);assert.equal(social.length,4);
  for(const r of social){assert.match(r.url,/\/hawaya-social$/);assert.equal(r.p.id,'fixture-student');assert.equal(r.p.password,'fixture-password');}
  assert.deepEqual(errors,[]);console.log('PASS: full student startup, feed, publish, like, group chat, composer placement and authenticated routing');
  }finally{dom.window.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
+
