@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta name="hawaya-version" content="social-fast-tabs-20261009">
+<meta name="hawaya-version" content="student-recovery-20261011">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>هواية</title>
@@ -525,6 +525,15 @@
         </div>
       </div>
 
+      <div class="section-card" id="achievementsErrorCard" style="display:none;" role="status">
+        <div class="locked-box">
+          <div style="font-weight:800;color:var(--indigo);margin-bottom:8px;">تعذر تحميل النقاط</div>
+          <div class="section-sub" id="achievementsErrorReason">تعذر الاتصال بالخادم. أعد المحاولة.</div>
+          <button type="button" class="refresh-btn" id="retryPointsBtn">إعادة المحاولة</button>
+          <button type="button" class="refresh-btn hidden" id="pointsLoginBtn">تسجيل الدخول مجددًا</button>
+        </div>
+      </div>
+
       <!-- الصفوف الأولى-الثالثة: المعلم يضيف النقاط مباشرة من شاشه -->
       <div class="section-card" id="achievementsTeacherManagedCard" style="display:none;">
         <div class="locked-box">
@@ -1005,13 +1014,21 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     }
   }
 
-  async function loadMyGroup() {
+  let groupRead = null;
+  function loadMyGroup() {
     const session = getSession();
     if (!session) return;
+    const sessionKey = JSON.stringify(session);
+    if (groupRead?.sessionKey === sessionKey) return groupRead.promise;
+    const read = { sessionKey, promise: null };
+    groupRead = read;
     const wrap = document.getElementById('myGroupContent');
-    try {
-      const data = await callAppsScript({ action: 'getStudentGroupData', id: session.id });
-      if (!data.success || !data.hasGroup) {
+    read.promise = (async () => {
+     try {
+      const data = await callAppsScript({ action: 'getStudentGroupData', id: session.id }, { timeoutMs: 20000 });
+      if (JSON.stringify(getSession()) !== sessionKey) return;
+      if (!data.success) throw new Error(data.error || 'تعذر تحميل المجموعة');
+      if (!data.hasGroup) {
         wrap.innerHTML = '<p class="lb-empty">لم تتم إضافتك إلى مجموعة حتى الآن</p>';
         return;
       }
@@ -1021,10 +1038,19 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
           <span><b>${index + 1}. ${member.name}</b>${String(member.id) === String(session.id) ? ' (أنت)' : ''}</span>
           <span class="achievement-points">${member.balance} نقطة</span>
         </div>`).join('');
-    } catch (_) {
-      wrap.innerHTML = '<p class="lb-empty">تعذر تحميل المجموعة</p>';
-    }
+     } catch (_) {
+      if (JSON.stringify(getSession()) !== sessionKey) return;
+      wrap.innerHTML = '<p class="lb-empty" role="status">تعذر تحميل المجموعة. أعد المحاولة.</p><button type="button" class="refresh-btn" data-retry-group>إعادة المحاولة</button>';
+     } finally {
+      if (groupRead === read) groupRead = null;
+     }
+    })();
+    return read.promise;
   }
+  document.getElementById('myGroupContent').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-retry-group]');
+    if (button) { button.disabled = true; button.textContent = 'جاري التحميل...'; loadMyGroup(); }
+  });
 
   document.getElementById('confirmAchievementsBtn').addEventListener('click', async () => {
     const session = getSession();
@@ -1109,9 +1135,12 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     }
     const socialAction=['getStudentSocial','postStudentSocial','setStudentSocialLike','getSupervisorSocial','postSupervisorSocial','deleteSupervisorSocial','setSocialStageEnabled'].includes(payload.action);
     const endpoint=socialAction?'https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-social':APPS_SCRIPT_URL;
-    const res = await fetch(endpoint, {
+    const controller = !options.signal && options.timeoutMs ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), options.timeoutMs) : null;
+    try {
+     const res = await fetch(endpoint, {
       method: 'POST',
-      signal: options.signal,
+      signal: options.signal || controller?.signal,
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
@@ -1119,8 +1148,9 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
       },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.json();
+     if (!res.ok) { const error = new Error('HTTP ' + res.status); error.status = res.status; throw error; }
+     return await res.json();
+    } finally { if (timer !== null) clearTimeout(timer); }
   }
 
   // ===== تغيير الصورة الشخصية =====
@@ -1506,9 +1536,17 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     </div>`).join('');
   }
 
-  async function loadAchievements(dayKey) {
+  let pointsRead = null;
+  let pointsReadVersion = 0;
+  function loadAchievements(dayKey, force = false) {
     const session = getSession();
     if (!session) return;
+    const sessionKey = JSON.stringify(session);
+    const requestedDay = dayKey || selectedPointsDayKey;
+    if (!force && pointsRead?.sessionKey === sessionKey && pointsRead.day === requestedDay) return pointsRead.promise;
+    const version = ++pointsReadVersion;
+    const isCurrent = () => version === pointsReadVersion && JSON.stringify(getSession()) === sessionKey;
+    document.getElementById('achievementsErrorCard').style.display = 'none';
     if (YOUNG_GRADES.indexOf(currentStudentStage) !== -1) {
       document.getElementById('achievementsLockedCard').style.display = 'none';
       document.getElementById('achievementsContent').style.display = 'none';
@@ -1516,12 +1554,21 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
       return;
     }
     document.getElementById('achievementsTeacherManagedCard').style.display = 'none';
-    try {
-      const data = await callAppsScript({ action: 'getDayPointsContext', id: session.id, password: session.pw, dayKey: dayKey || selectedPointsDayKey });
+    document.getElementById('confirmAchievementsBtn').disabled = true;
+    const read = { sessionKey, day: requestedDay, promise: null };
+    pointsRead = read;
+    read.promise = (async () => {
+     try {
+      const data = await callAppsScript({ action: 'getDayPointsContext', id: session.id, password: session.pw, dayKey: requestedDay }, { timeoutMs: 20000 });
+      if (!isCurrent()) return;
       if (!data.success) {
-        document.getElementById('achievementsLockedCard').style.display = 'block';
         document.getElementById('achievementsContent').style.display = 'none';
-        document.getElementById('achievementsLockedReason').textContent = data.error || 'الصفحة غير متاحة الآن';
+        if (data.code === 'POINTS_CLOSED' || /^تفتح صفحة النقاط/.test(data.error || '')) {
+          document.getElementById('achievementsLockedCard').style.display = 'block';
+          document.getElementById('achievementsLockedReason').textContent = data.error || 'الصفحة غير متاحة الآن';
+        } else {
+          showPointsLoadError(data.error);
+        }
         return;
       }
       selectedPointsDayKey = data.selectedDay.key;
@@ -1538,12 +1585,33 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
       saveBtn.textContent = '✅ حفظ النقاط';
       const statusMsg = document.getElementById('achievementsMsg');
       statusMsg.textContent = '';
-    } catch (_) {
-      document.getElementById('achievementsLockedCard').style.display = 'block';
-      document.getElementById('achievementsContent').style.display = 'none';
-      document.getElementById('achievementsLockedReason').textContent = 'تعذر الاتصال، حاول مرة أخرى';
-    }
+     } catch (_) {
+      if (isCurrent()) showPointsLoadError();
+     } finally {
+      if (pointsRead === read) pointsRead = null;
+     }
+    })();
+    return read.promise;
   }
+
+  function showPointsLoadError(reason) {
+    document.getElementById('achievementsLockedCard').style.display = 'none';
+    document.getElementById('achievementsContent').style.display = 'none';
+    document.getElementById('achievementsErrorCard').style.display = 'block';
+    document.getElementById('achievementsErrorReason').textContent = reason || 'تعذر الاتصال بالخادم. أعد المحاولة.';
+    document.getElementById('pointsLoginBtn').classList.toggle('hidden', !/الجلسة|بيانات الدخول|الطالب غير موجود/.test(reason || ''));
+  }
+  document.getElementById('retryPointsBtn').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true; button.textContent = 'جاري التحميل...';
+    try { await Promise.allSettled([loadAchievements(), loadMyGroup()]); }
+    finally { button.disabled = false; button.textContent = 'إعادة المحاولة'; }
+  });
+  document.getElementById('pointsLoginBtn').addEventListener('click', () => {
+    clearSession();
+    if (window.resetStudentSocial) window.resetStudentSocial();
+    showLogin('سجّل الدخول مجددًا لعرض نقاطك');
+  });
 
   document.getElementById('pointsDayTabs').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-points-day]');
@@ -1567,7 +1635,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
       const result = await callAppsScript({ action: 'saveDayPoints', id: session.id, password: session.pw, dayKey: selectedPointsDayKey, counts: counts });
       msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
       msg.textContent = result.success ? (result.modifiedOtherDay ? '✅ تم الحفظ، وسُجل أن التعديل تم في يوم آخر' : '✅ تم حفظ النقاط') : (result.error || 'تعذر الحفظ');
-      if (result.success) { await loadAchievements(); await loadMyPointsLog(); }
+      if (result.success) { await loadAchievements(undefined, true); await loadMyPointsLog(); }
     } catch (_) { msg.style.color = 'var(--error)'; msg.textContent = 'حدث خطأ في الاتصال'; }
     finally { btn.disabled = false; btn.textContent = '✅ حفظ النقاط'; }
   }, true);
@@ -1720,4 +1788,3 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
 </script>
 </body>
 </html>
-

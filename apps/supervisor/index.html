@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta name="hawaya-version" content="supervisor-fast-social-20261009">
+  <meta name="hawaya-version" content="supervisor-avatar-fix-20261012">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>مشرف هواية</title>
@@ -326,7 +326,9 @@
 .social-note{font-size:10px;margin:7px 0;line-height:1.6}
 .social-tabs{gap:6px;margin:12px 0}.social-tabs button{padding:10px 7px;font-size:12px;border-radius:12px}
 .social-feed{min-height:140px}.social-post{padding:12px;margin:9px 0;border-radius:16px}
-.social-author{gap:7px;font-size:12px}.social-avatar{width:32px;height:32px;font-size:18px}
+.social-author{gap:7px;font-size:12px}
+.social-avatar{flex:0 0 32px;width:32px;height:32px;aspect-ratio:1;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1}
+.social-avatar img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
 .social-badge{font-size:9px}.social-post p{font-size:13px;line-height:1.8;margin:10px 0}
 .social-meta,.social-delete{font-size:10px}.social-compose{gap:7px}
 .social-compose textarea{font-family:inherit;font-size:12px;min-height:62px;padding:10px;border-radius:13px;margin:0}
@@ -3176,7 +3178,7 @@
   const active=enabled.get(stage)!==false;el('socialEnabled').checked=active;el('socialEnabled').disabled=busy||!enabled.has(stage);
   form.classList.toggle('hidden',!stage||!active||(chat&&!groupId));feed.classList.toggle('social-chat',chat);
   const wasBottom=feed.scrollHeight-feed.scrollTop-feed.clientHeight<45,list=entry?.messages||[];
-  const html=chat&&!groupId?'<div class="social-empty">اختر مجموعة لفتح محادثتها</div>':!entry?'<div class="social-empty">جاري تحميل الرسائل…</div>':!list.length?'<div class="social-empty">'+(chat?'بداية محادثة المجموعة':'لا توجد تغريدات في هذه المرحلة بعد')+'</div>':list.map(m=>'<article class="social-post">'+(m.pinned?'<div class="social-pinned-label">مثبتة</div>':'')+'<div class="social-author"><span class="social-avatar">'+(/^https?:\/\//i.test(m.imageUrl||'')?'<img loading="lazy" src="'+escape(m.imageUrl)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':'♙')+'</span><strong>'+escape(m.name)+'</strong>'+(m.supervisor?'<span class="social-badge">✓ مشرف</span>':'')+'</div><p style="white-space:pre-wrap">'+escape(m.text)+'</p><div class="social-meta"><span>'+escape(new Date(m.createdAt).toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+(chat?'':' · '+Number(m.likes||0)+' إعجاب')+'</span><span>'+(!chat?'<button type="button" class="social-pin" data-social-pin="'+escape(m.id)+'" data-pinned="'+String(!!m.pinned)+'">'+(m.pinned?'إلغاء التثبيت':'تثبيت')+'</button>':'')+'<button type="button" class="social-delete" data-social-delete="'+escape(m.id)+'">حذف</button></span></div></article>').join('');
+  const html=chat&&!groupId?'<div class="social-empty">اختر مجموعة لفتح محادثتها</div>':!entry?'<div class="social-empty">جاري تحميل الرسائل…</div>':!list.length?'<div class="social-empty">'+(chat?'بداية محادثة المجموعة':'لا توجد تغريدات في هذه المرحلة بعد')+'</div>':list.map(m=>'<article class="social-post">'+(m.pinned?'<div class="social-pinned-label">مثبتة</div>':'')+'<div class="social-author"><span class="social-avatar">'+(/^https?:\/\//i.test(m.imageUrl||'')?'<img loading="lazy" src="'+escape(m.imageUrl)+'" alt="" width="32" height="32">':'♙')+'</span><strong>'+escape(m.name)+'</strong>'+(m.supervisor?'<span class="social-badge">✓ مشرف</span>':'')+'</div><p style="white-space:pre-wrap">'+escape(m.text)+'</p><div class="social-meta"><span>'+escape(new Date(m.createdAt).toLocaleString('ar-SA',{timeZone:'Asia/Riyadh',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+(chat?'':' · '+Number(m.likes||0)+' إعجاب')+'</span><span>'+(!chat?'<button type="button" class="social-pin" data-social-pin="'+escape(m.id)+'" data-pinned="'+String(!!m.pinned)+'">'+(m.pinned?'إلغاء التثبيت':'تثبيت')+'</button>':'')+'<button type="button" class="social-delete" data-social-delete="'+escape(m.id)+'">حذف</button></span></div></article>').join('');
   if(feed.innerHTML!==html)feed.innerHTML=html;
   if(chat&&wasBottom)feed.scrollTop=feed.scrollHeight;
   el('socialStatus').textContent=errors.get(stage)||(enabled.get(stage)===false?'التغريدات والمحادثات معطلة للطلاب في هذه المرحلة':'');
@@ -3280,4 +3282,3 @@
 })();
 </script></body>
 </html>
-
