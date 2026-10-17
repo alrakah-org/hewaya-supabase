@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta name="hawaya-version" content="supervisor-avatar-fix-20261012">
+  <meta name="hawaya-version" content="supervisor-push-20261015">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>مشرف هواية</title>
 <link rel="icon" type="image/png" href="icon-192.png?v=2">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json?v=3">
-<script src="install.js?v=20260930c" defer></script>
+<script src="install.js?v=20261015" defer></script>
 <meta name="theme-color" content="#352868">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;700;800&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="../shared/vendor/qrcode-1.0.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
@@ -345,7 +345,11 @@
 #socialForm:not(.is-chat) #socialSend{grid-column:2;justify-self:end;min-width:84px;padding:10px 22px;border-radius:24px;background:linear-gradient(100deg,#7e32a6,#a344b7);font-size:14px}
 #socialForm.is-chat .social-compose-avatar{display:none}
 #socialForm.is-chat{margin-top:12px}
-</style><style>.social-pinned-label{font-size:10px;color:#8745a8;font-weight:700;margin-bottom:9px}.social-pin{width:auto!important;padding:3px 8px!important;margin:0 0 0 9px!important;font-size:11px!important;color:#764295!important;background:#f1e8f7!important;box-shadow:none!important;border-radius:10px!important}</style></head>
+</style><style>.social-pinned-label{font-size:10px;color:#8745a8;font-weight:700;margin-bottom:9px}.social-pin{width:auto!important;padding:3px 8px!important;margin:0 0 0 9px!important;font-size:11px!important;color:#764295!important;background:#f1e8f7!important;box-shadow:none!important;border-radius:10px!important}</style>
+<link rel="stylesheet" href="../shared/notifications.css?v=20261015">
+<script src="../shared/push-store.js?v=20261015" defer></script>
+<script src="../shared/notifications.js?v=20261015" defer></script>
+</head>
 <body>
 
 <!-- ===================== شاشة تسجيل دخول المشرف ===================== -->
@@ -379,6 +383,7 @@
   <div class="app-header">
     <img id="headerLogoImg" class="header-logo" alt="هواية">
     <div style="display:flex;align-items:center;gap:6px;">
+      <button type="button" id="pushOpenBtn" class="push-trigger" aria-label="إعدادات الإشعارات" title="الإشعارات"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button>
       <button type="button" id="supervisorLogoutBtn" class="header-back-btn" aria-label="تسجيل خروج" style="font-size:1.1rem;">🚪</button>
       <button type="button" id="headerBackBtn" class="header-back-btn hidden" aria-label="رجوع">←</button>
     </div>
@@ -924,6 +929,7 @@
      ==================================================================== */
   const SUPERVISOR_NAMES = ['فارس مقبول', 'ناصر الصياح', 'عبدالرحمن بامشموس', 'بشارة الزبير', 'عبدالعزيز الجامع', 'فهد الخضير', 'أسامة نور', 'هادي باشا'];
   const SUPERVISOR_SESSION_KEY = 'hawaya_supervisor_session';
+  window.hawayaPushConfig={role:'supervisor',apiKey:SUPABASE_ANON_KEY,sessionKey:SUPERVISOR_SESSION_KEY,session:()=>{try{const s=JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY)||'null');return s?.token&&new Date(s.expiresAt).getTime()>Date.now()?s:null;}catch{return null;}},loggedIn:()=>!document.getElementById('appView').classList.contains('hidden')};
   let currentSupervisorName = '';
 
   function showSupervisorLogin(errorText) {
@@ -936,6 +942,7 @@
     document.getElementById('supervisorLoginView').classList.add('hidden');
     document.getElementById('appView').classList.remove('hidden');
     if(window.resetSupervisorSocial)window.resetSupervisorSocial();
+    window.hawayaPush?.onLogin();
   }
 
   document.getElementById('supervisorLoginForm').addEventListener('submit', async (e) => {
@@ -962,7 +969,8 @@
     }
   });
 
-  document.getElementById('supervisorLogoutBtn').addEventListener('click', () => {
+  document.getElementById('supervisorLogoutBtn').addEventListener('click', async () => {
+    if(window.hawayaPush)await window.hawayaPush.disconnect();
     localStorage.removeItem(SUPERVISOR_SESSION_KEY);
     document.getElementById('supervisorLoginForm').reset();
     currentSupervisorName = '';
@@ -1158,7 +1166,16 @@
       },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) { const error = new Error('HTTP ' + res.status); error.status = res.status; throw error; }
+    if (!res.ok) {
+      const data=await res.json().catch(()=>({}));
+      if(res.status===401){
+        window.hawayaPush?.disconnect();
+        localStorage.removeItem(SUPERVISOR_SESSION_KEY);currentSupervisorName='';
+        window.resetSupervisorSocial?.();
+        showSupervisorLogin('انتهت جلسة المشرف، سجّل الدخول مجددًا ثم أكمل التسجيل.');
+      }
+      const error=new Error(res.status===401?'انتهت جلسة المشرف، سجّل الدخول مجددًا.':data.error||'تعذر الاتصال بالخادم، حاول مرة أخرى.');error.status=res.status;throw error;
+    }
     return res.json();
   }
 
@@ -1280,7 +1297,11 @@
     const qrContainer = document.getElementById('qrcode');
     qrContainer.innerHTML = '';
     const loginLink = STUDENT_APP_BASE_URL + '?id=' + data.id + '&pw=' + data.password;
-    new QRCode(qrContainer, { text: loginLink, width: 160, height: 160, colorDark: '#15101F', colorLight: '#ffffff' });
+    if(typeof QRCode==='function'){
+      new QRCode(qrContainer, { text: loginLink, width: 160, height: 160, colorDark: '#15101F', colorLight: '#ffffff' });
+    }else{
+      qrContainer.textContent='يمكن الدخول برقم الطالب والرقم السري الموضحين في البطاقة.';
+    }
 
     setPhotoBox(data.imageUrl);
 
@@ -3191,7 +3212,7 @@
   for(const map of [feeds,groups,enabled,inflight,versions,drafts,pendingIds,scrolls,errors])map.clear();
   stage='';mode='tweets';groupId='';token='';owner='';busy=false;rememberedGroups={};el('socialText').value='';el('socialSettings').classList.add('hidden');render();
  }
- function expireSession(){clearMemory();try{localStorage.removeItem(STORE);localStorage.removeItem(SUPERVISOR_SESSION_KEY);}catch{}showSupervisorLogin('انتهت جلسة المشرف، سجل الدخول مجددًا');}
+ function expireSession(){window.hawayaPush?.disconnect();clearMemory();try{localStorage.removeItem(STORE);localStorage.removeItem(SUPERVISOR_SESSION_KEY);}catch{}showSupervisorLogin('انتهت جلسة المشرف، سجل الدخول مجددًا');}
  async function start(){
   clearMemory();const saved=session();if(!saved){try{localStorage.removeItem(STORE);}catch{}return;}
   token=saved.token;const run=epoch;
@@ -3207,6 +3228,14 @@
     if(STAGES.includes(stored.selection?.stage)){stage=stored.selection.stage;mode=stored.selection.channel==='chat'?'chat':'tweets';groupId=mode==='chat'?stored.selection.groupId||'':'';}
    }else localStorage.removeItem(STORE);
   }catch{}
+  const params=new URLSearchParams(location.search),target=params.get('notify');
+  if(target==='tweets'||target==='chat'){
+   const requestedStage={elementary_456:'رابع+خامس+سادس',middle:'متوسط',secondary:'ثانوي'}[params.get('stage')];
+   if(requestedStage){
+    stage=requestedStage;mode=target;groupId=target==='chat'&&/^[0-9a-f-]{36}$/i.test(params.get('group')||'')?params.get('group'):'';
+    if(groupId)rememberedGroups[stage]=groupId;
+   }
+  }
   showSelection();if(stage)read(true);
  }
  function read(force=false){

@@ -1,3 +1,3 @@
-self.addEventListener('install', (e) => { self.skipWaiting(); });
-self.addEventListener('activate', (e) => { self.clients.claim(); });
-self.addEventListener('fetch', (e) => {});
+importScripts('../shared/push-worker.js?v=20261015');
+self.addEventListener('install',()=>self.skipWaiting());
+self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));

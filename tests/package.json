@@ -1,0 +1,13 @@
+{
+  "name": "hawaya-notification-and-account-checks",
+  "private": true,
+  "scripts": {"test": "node --test push-*.test.cjs account-*.test.cjs"},
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@types/web-push": "3.6.4",
+    "deno": "2.5.4",
+    "jsdom": "26.1.0",
+    "supabase": "2.120.0",
+    "web-push": "3.6.7"
+  }
+}

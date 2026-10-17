@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta name="hawaya-version" content="student-recovery-20261011">
+<meta name="hawaya-version" content="student-push-20261015">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>هواية</title>
@@ -412,7 +412,11 @@
 #studentSocialForm.is-chat #studentSocialText{min-height:48px}
 .social-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 .student-social-nav-icon{width:27px;height:27px;fill:currentColor}
-</style><style>.student-pinned-label{font-size:10px;color:#8745a8;font-weight:700;margin-bottom:9px}</style></head>
+</style><style>.student-pinned-label{font-size:10px;color:#8745a8;font-weight:700;margin-bottom:9px}</style>
+<link rel="stylesheet" href="../shared/notifications.css?v=20261015">
+<script src="../shared/push-store.js?v=20261015" defer></script>
+<script src="../shared/notifications.js?v=20261015" defer></script>
+</head>
 <body>
 
 <!-- يظهر مرة واحدة عند فتح التطبيق، ويعمل صامتًا -->
@@ -489,7 +493,7 @@
 <div id="appView" class="hidden">
   <div class="app-header">
     <div class="brand-logos"><img class="app-logo header-logo" id="appRefreshLogo" role="button" tabindex="0" title="تحديث التطبيق" alt="هواية — اضغط للتحديث"><img class="rowad-logo" src="rowad-hawaya-logo.png" alt="رواد هواية"></div>
-    <div class="header-welcome" id="headerWelcome"></div>
+    <div class="push-header-actions"><div class="header-welcome" id="headerWelcome"></div><button type="button" id="pushOpenBtn" class="push-trigger" aria-label="إعدادات الإشعارات" title="الإشعارات"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button></div>
   </div>
 
   <div class="pages-viewport" id="pagesViewport">
@@ -690,6 +694,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   const CLOUDINARY_UPLOAD_PRESET = 'hawaya_upload';
   const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload';
   const SESSION_KEY = 'hawaya_student_session';
+  const notificationTarget=new URLSearchParams(location.search).get('notify');
 
   // مفتاح تحكم واحد: true يعرض صفحة "انتهى البرنامج" بدل التطبيق بالكامل.
   // false يرجّع التطبيق لعمله الطبيعي فورًا — بدون حذف أو المساس بأي كود آخر.
@@ -723,10 +728,12 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     document.getElementById('programEndedView').classList.remove('hidden');
   } else {
 
+  window.hawayaPushConfig={role:'student',apiKey:SUPABASE_ANON_KEY,sessionKey:SESSION_KEY,session:getSession,loggedIn:()=>!document.getElementById('appView').classList.contains('hidden')};
+
   // تسجيل Service Worker — شرط أساسي ليعرض المتصفح زر التثبيت التلقائي (PWA)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=push-20261015',{updateViaCache:'none'}).catch(() => {});
     });
   }
 
@@ -1246,7 +1253,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
       return raw ? JSON.parse(raw) : null;
     } catch (_) { return null; }
   }
-  function clearSession() { localStorage.removeItem(SESSION_KEY); }
+  function clearSession() { window.hawayaPush?.disconnect(); localStorage.removeItem(SESSION_KEY); }
 
   // ====== عرض الواجهات ======
   const loadingView = document.getElementById('loadingView');
@@ -1277,6 +1284,8 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     loadDailyTip();
     loadAchievements();
     loadMyPointsLog();
+    if(notificationTarget==='points'){goToPage(1);loadMyGroup();}
+    window.hawayaPush?.onLogin();
   }
 
   function populateStudentData(data) {
@@ -1389,8 +1398,9 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   });
 
   // ====== تسجيل الخروج ======
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    clearSession();
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    if(window.hawayaPush)await window.hawayaPush.disconnect();
+    localStorage.removeItem(SESSION_KEY);
     location.reload();
   });
 
@@ -1607,8 +1617,9 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     try { await Promise.allSettled([loadAchievements(), loadMyGroup()]); }
     finally { button.disabled = false; button.textContent = 'إعادة المحاولة'; }
   });
-  document.getElementById('pointsLoginBtn').addEventListener('click', () => {
-    clearSession();
+  document.getElementById('pointsLoginBtn').addEventListener('click', async () => {
+    if(window.hawayaPush)await window.hawayaPush.disconnect();
+    localStorage.removeItem(SESSION_KEY);
     if (window.resetStudentSocial) window.resetStudentSocial();
     showLogin('سجّل الدخول مجددًا لعرض نقاطك');
   });
@@ -1774,7 +1785,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   el('studentSocialText').value='';render();
  }
  window.resetStudentSocial=()=>{
-  reset();const avatarEl=el('studentSocialAvatar'),photo=document.getElementById('infoAvatar').style.backgroundImage;
+  reset();if(notificationTarget==='chat'){channel='chat';render();}const avatarEl=el('studentSocialAvatar'),photo=document.getElementById('infoAvatar').style.backgroundImage;
   avatarEl.style.backgroundImage=photo;avatarEl.style.backgroundSize='cover';avatarEl.style.backgroundPosition='center';avatarEl.textContent=photo?'':'🧒';read();
  };
  document.querySelector('[data-index="5"]').addEventListener('click',()=>read());
