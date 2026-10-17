@@ -3,24 +3,45 @@
   const config=window.hawayaPushConfig;if(!config)return;
   const scope=new URL('.',location.href).pathname,store=window.HawayaPushStore;
   const api='https://uvcotcfemolqwkgypyeq.supabase.co/functions/v1/hawaya-push';
-  let busy=false,syncTask=null,run=0,enabled=false;
+  let busy=false,syncTask=null,run=0,enabled=false,reminderOwner='';
   const dialog=document.createElement('dialog');dialog.className='push-dialog';dialog.dir='rtl';
   dialog.innerHTML='<h2>إشعارات هواية</h2><p class="push-description"></p><button type="button" class="push-toggle">تفعيل الإشعارات</button><p class="push-status" role="status" aria-live="polite"></p><button type="button" class="push-close">إغلاق</button>';
   document.body.appendChild(dialog);
-  const toggle=dialog.querySelector('.push-toggle'),status=dialog.querySelector('.push-status');
-  dialog.querySelector('.push-description').textContent=config.role==='student'?'تنبّهك عند تعديل نقاطك، ونشر تغريدة في مرحلتك، ووصول رسالة في مجموعتك.':'تنبّهك بالتغريدات ورسائل المجموعات في جميع المراحل.';
-  dialog.querySelector('.push-close').onclick=()=>dialog.close();
+  const toggle=dialog.querySelector('.push-toggle'),status=dialog.querySelector('.push-status'),close=dialog.querySelector('.push-close');
+  dialog.querySelector('.push-description').textContent=config.role==='student'?'فعّل الإشعارات لتصلك تنبيهات عند تعديل نقاطك، ونشر تغريدة في مرحلتك، ووصول رسالة في مجموعتك.':'فعّل الإشعارات لتصلك تنبيهات بالتغريدات ورسائل المجموعات في جميع المراحل.';
+  close.onclick=()=>dialog.close();
   const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
   const supported=()=>('serviceWorker'in navigator)&&('PushManager'in window)&&('Notification'in window)&&!!store;
   const owner=()=>{const s=config.session();return s?(config.role+':'+String(s.id||s.name||'')):'';};
+  const deviceEnabled=saved=>!!(saved?.enabled&&saved.binding&&saved.owner===owner()&&supported()&&Notification.permission==='granted');
   function draw(message){
     toggle.disabled=busy;
     toggle.textContent=busy?'جاري الإعداد...':enabled?'إيقاف الإشعارات':'تفعيل الإشعارات';
+    close.textContent=enabled?'إغلاق':'لاحقًا';
     if(message!==undefined)status.textContent=message;
     if(ios&&!standalone){toggle.disabled=true;status.textContent='أضف هواية إلى الشاشة الرئيسية من زر المشاركة في Safari، ثم افتحه من الأيقونة لتفعيل الإشعارات.';}
     else if(!supported()){toggle.disabled=true;status.textContent='هذا المتصفح لا يدعم إشعارات التطبيق. جرّب متصفحًا حديثًا.';}
     else if(Notification.permission==='denied'){toggle.disabled=true;status.textContent='الإشعارات محظورة. اسمح بها لهواية من إعدادات المتصفح أو الجهاز ثم أعد فتح التطبيق.';}
+  }
+  function openDialog(){
+    reminderOwner=owner();
+    if(!dialog.open)dialog.showModal();
+  }
+  function remind(){
+    const currentOwner=owner();
+    if(!currentOwner||!config.loggedIn()||enabled||busy||document.visibilityState==='hidden'||reminderOwner===currentOwner)return;
+    draw();openDialog();
+  }
+  async function checkReminder(){
+    const currentOwner=owner();
+    if(!currentOwner||!config.loggedIn()||busy||syncTask)return;
+    try{
+      const saved=await store?.get(scope);
+      if(owner()!==currentOwner)return;
+      enabled=deviceEnabled(saved);
+    }catch{enabled=false;draw('تعذر قراءة إعدادات الإشعارات. حاول التفعيل مرة أخرى.');}
+    remind();
   }
   async function request(body,session,keepalive=false){
     const headers={'Content-Type':'application/json',apikey:config.apiKey,Authorization:'Bearer '+config.apiKey};
@@ -72,17 +93,17 @@
     draw('الإشعارات مفعّلة على هذا الجهاز.');
   }
   async function onLogin(){
-    if(!supported())return;
-    if(!owner()){await disconnect();return;}
+    if(!owner()){reminderOwner='';if(dialog.open)dialog.close();if(supported())await disconnect();return;}
     if(!config.loggedIn())return;
-    if(syncTask)return syncTask;
+    if(!supported()){enabled=false;remind();return;}
+    if(syncTask||busy)return syncTask;
     syncTask=(async()=>{
       const saved=await store.get(scope);
       if(saved?.owner&&saved.owner!==owner()){await disconnect();return;}
-      enabled=!!saved?.enabled;draw();
-      if(enabled&&Notification.permission==='granted')await subscribe();
-      else if(enabled)await disconnect();
-    })().catch(()=>{draw('تعذر تحديث اشتراك الإشعارات. افتح هذه النافذة وأعد التفعيل.');}).finally(()=>{syncTask=null;});
+      enabled=deviceEnabled(saved);draw();
+      if(enabled)await subscribe();
+      else if(saved?.enabled)await disconnect();
+    })().catch(()=>{draw('تعذر تحديث اشتراك الإشعارات. افتح هذه النافذة وأعد التفعيل.');}).finally(()=>{syncTask=null;remind();});
     return syncTask;
   }
   toggle.onclick=async()=>{
@@ -100,11 +121,17 @@
     finally{busy=false;draw();}
   };
   document.getElementById('pushOpenBtn')?.addEventListener('click',async()=>{
-    draw();dialog.showModal();
-    try{const saved=await store?.get(scope);enabled=!!saved?.enabled&&saved.owner===owner();draw();}catch{draw('تعذر حفظ إعدادات الإشعارات على هذا الجهاز.');}
+    draw();openDialog();
+    try{const saved=await store?.get(scope);enabled=deviceEnabled(saved);draw();}catch{draw('تعذر حفظ إعدادات الإشعارات على هذا الجهاز.');}
   });
   window.hawayaPush={onLogin,disconnect};
   navigator.serviceWorker?.addEventListener('message',event=>{if(event.data?.type==='HAWAYA_PUSH_RENEW')onLogin();});
   window.addEventListener('storage',event=>{if(event.key===config.sessionKey)onLogin();});
+  // A fresh launch or return from the background starts a new visit. Dismissal
+  // lasts only for that visit; tab navigation and background renewals do not nag.
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='hidden'){reminderOwner='';return;}
+    checkReminder();
+  });
   if(config.loggedIn()||!owner())onLogin();
 })();
