@@ -3,12 +3,13 @@ declare const Deno: { env: { get(name: string): string | undefined }; serve(hand
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const REST = `${SUPABASE_URL}/rest/v1`;
-const API_VERSION = 'social-fast-supervisor-20261009';
+const API_VERSION = 'social-single-read-20261017';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-hawaya-session',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '600',
 };
 
 function json(data: unknown, status = 200) {
@@ -171,22 +172,7 @@ async function socialFeed(ctx:any) {
  mine:!!ctx.student&&m.author_student_id===ctx.student.id}));
 }
 
-async function supervisorSocialOverview(body:any) {
- const stage=pointStage(body.stage);if(!stage)return {success:false,error:'اختر المرحلة أولًا'};
- const [settings,groups]=await Promise.all([
-  rows(`/tweet_stage_settings?stage_category=eq.${stage}&select=enabled`),
-  rows(`/groups?stage_category=eq.${stage}&active=eq.true&select=id,name&order=name.asc`)
- ]);
- const group=body.groupId?groups.find((g:any)=>g.id===body.groupId):groups[0];
- const info={stage,stageLabel:categoryLabel(stage),enabled:settings[0]?.enabled===true};
- const tweetCtx={stage,channel:'tweets',filter:`stage_category=eq.${stage}&channel=eq.tweets&group_id=is.null&deleted_at=is.null`};
- const chatCtx={stage,channel:'chat',filter:group?`group_id=eq.${group.id}&channel=eq.chat&deleted_at=is.null`:null};
- const [tweets,chat]=await Promise.all([socialFeed(tweetCtx),socialFeed(chatCtx)]);
- return {success:true,...info,groups,feeds:[{channel:'tweets',groupId:null,messages:tweets},...(group?[{channel:'chat',groupId:group.id,messages:chat}]:[])]};
-}
-
 async function socialAction(body:any,supervisor:any=null) {
- if(supervisor&&body.action==='getSupervisorSocial'&&body.prefetch===true)return supervisorSocialOverview(body);
  const ctx:any=await socialContext(body,supervisor);if(ctx.error)return {success:false,error:ctx.error};
  const info={stage:ctx.stage,stageLabel:categoryLabel(ctx.stage),enabled:ctx.enabled,hasGroup:!!ctx.group,groupId:ctx.group?.id||null,groupName:ctx.group?.name||''};
  const action=String(body.action);
@@ -241,6 +227,17 @@ Deno.serve(async(req)=>{
   const body=await req.json(),action=String(body.action||'');
   if(action==='getSocialVersion')return json({success:true,version:API_VERSION});
   if(['getStudentSocial','postStudentSocial','setStudentSocialLike'].includes(action))return json(await socialAction(body));
+  if(action==='getSupervisorSocial'&&body.prefetch===true){
+   const token=req.headers.get('x-hawaya-session')||'';
+   if(!token)return json({success:false,error:'انتهت جلسة المشرف، سجل الدخول مجددًا'},401);
+   const groupId=body.groupId?socialUuid(body.groupId):null;
+   if(body.groupId&&!groupId)return json({success:false,error:'اختر المجموعة'},400);
+   const result=await rpc('edge_supervisor_social_overview',{
+    p_token_hash:await sha256(token),p_stage:pointStage(body.stage),p_group_id:groupId
+   });
+   if(!result)return json({success:false,error:'انتهت جلسة المشرف، سجل الدخول مجددًا'},401);
+   return json(result);
+  }
   const supervisor=await requireSupervisor(req);
   if(!supervisor)return json({success:false,error:'انتهت جلسة المشرف، سجل الدخول مجددًا'},401);
   if(['getSupervisorSocial','postSupervisorSocial','deleteSupervisorSocial','setSupervisorSocialPin'].includes(action))return json(await socialAction(body,supervisor));
@@ -252,5 +249,6 @@ Deno.serve(async(req)=>{
   return json({success:false,error:'إجراء غير معروف'},400);
  }catch(error){console.error(error);return json({success:false,error:'تعذر الاتصال بخدمة التغريدات'},500);}
 });
+
 
 

@@ -1,7 +1,7 @@
 {
   "name": "hawaya-notification-and-account-checks",
   "private": true,
-  "scripts": {"test": "node --test push-*.test.cjs account-*.test.cjs"},
+  "scripts": {"test": "node --test push-*.test.cjs account-*.test.cjs supervisor-social-*.test.cjs social-access.test.cjs"},
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
     "@types/web-push": "3.6.4",

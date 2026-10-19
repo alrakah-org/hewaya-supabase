@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta name="hawaya-version" content="supervisor-push-reminder-20261017">
+  <meta name="hawaya-version" content="supervisor-fast-social-20261017">
+  <link rel="preconnect" href="https://uvcotcfemolqwkgypyeq.supabase.co" crossorigin>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>مشرف هواية</title>
@@ -3164,7 +3165,7 @@
 <script>
 (()=>{
  const el=id=>document.getElementById(id),STAGES=['رابع+خامس+سادس','متوسط','ثانوي'];
- const STORE='hawaya_supervisor_social_cache_v1',FRESH_MS=15000,MAX_AGE=24*60*60*1000;
+ const STORE='hawaya_supervisor_social_cache_v1',FRESH_MS=15000,MAX_AGE=7*24*60*60*1000;
  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let stage='',mode='tweets',groupId='',epoch=0,token='',owner='',busy=false,persistTimer=null;
  const feeds=new Map(),groups=new Map(),enabled=new Map(),inflight=new Map(),versions=new Map(),drafts=new Map(),pendingIds=new Map(),scrolls=new Map(),errors=new Map();
@@ -3173,13 +3174,13 @@
  const key=s=>s.stage+'|'+s.channel+'|'+(s.channel==='chat'?(s.groupId||''):'');
  function session(){try{const s=JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY)||'null');return s?.token&&new Date(s.expiresAt).getTime()>Date.now()?s:null;}catch{return null;}}
  function valid(run){return epoch===run&&session()?.token===token;}
- function storeLater(){
-  clearTimeout(persistTimer);const run=epoch;
-  persistTimer=setTimeout(()=>{if(!valid(run)||!owner)return;try{
+ function persistNow(){
+  clearTimeout(persistTimer);if(!valid(epoch)||!owner)return;try{
    const saved=[...feeds].filter(([,v])=>Date.now()-v.at<MAX_AGE).sort((a,b)=>b[1].at-a[1].at).slice(0,12).map(([k,v])=>[k,{...v,messages:v.channel==='chat'?v.messages.slice(-50):v.messages.slice(0,50)}]);
    localStorage.setItem(STORE,JSON.stringify({version:1,owner,at:Date.now(),selection:scope(),rememberedGroups,feeds:saved,groups:[...groups],enabled:[...enabled]}));
-  }catch{}},250);
+  }catch{}
  }
+ function storeLater(){clearTimeout(persistTimer);persistTimer=setTimeout(persistNow,250);}
  function saveDraft(){const k=key(scope());drafts.set(k,el('socialText').value);scrolls.set(k,el('socialFeed').scrollTop);}
  function options(){
   const list=groups.get(stage)?.items||[],select=el('socialGroup');
@@ -3260,7 +3261,7 @@
      const s={stage:selected,channel:f.channel,groupId:f.channel==='chat'?f.groupId:null};feeds.set(key(s),{...s,messages:f.messages,at});
     }
     if(stage===selected){if(mode==='chat'&&groupId&&!ids.has(groupId)){groupId='';mode='tweets';el('socialText').value=drafts.get(key(scope()))||'';}render();}
-    storeLater();success=true;return true;
+    persistNow();success=true;return true;
    }catch(error){
     if(valid(run)&&version===(versions.get(selected)||0)){
      if(error.status===401){expireSession();return false;}
@@ -3283,7 +3284,7 @@
    if(!data.success)throw Error(data.error||'تعذر الحفظ');enabled.set(selected.stage,data.enabled);
    if(Array.isArray(data.messages))feeds.set(k,{...selected,messages:data.messages,at:Date.now()});
    if(action==='postSupervisorSocial'&&(drafts.get(k)||'').trim()===extra.text){drafts.delete(k);pendingIds.delete(k);if(key(scope())===k)el('socialText').value='';}
-   if(stage===selected.stage)render();storeLater();return true;
+   if(stage===selected.stage)render();persistNow();return true;
   }catch(error){if(valid(run)){if(error.status===401){expireSession();return false;}errors.set(selected.stage,error.message||'تعذر الحفظ');if(stage===selected.stage)render();}return false;}
   finally{if(valid(run)){busy=false;render();if(!feeds.has(key(scope())))read();}}
  }
@@ -3306,7 +3307,8 @@
  document.querySelector('[data-index="7"]').addEventListener('click',()=>{render();read();});
  window.addEventListener('storage',e=>{if(e.key===SUPERVISOR_SESSION_KEY){clearMemory();try{localStorage.removeItem(STORE);}catch{}}});
  setInterval(()=>{if(!document.hidden&&!el('appView').classList.contains('hidden')&&currentIndex===7)read();},FRESH_MS);
- document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentIndex===7)read();});
+ window.addEventListener('pagehide',persistNow);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)persistNow();else if(currentIndex===7)read();});
  start();
 })();
 </script></body>

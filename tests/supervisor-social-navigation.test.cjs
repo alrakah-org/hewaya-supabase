@@ -3,8 +3,8 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const html=fs.readFileSync(process.env.SUPERVISOR_HTML||__dirname+'/../apps/supervisor/index.html','utf8');
 const tick=()=>new Promise(r=>setImmediate(r)),STORE='hawaya_supervisor_social_cache_v1';
 const G1='10000000-0000-4000-8000-000000000001',G2='10000000-0000-4000-8000-000000000002';
-function setup({cached=null,token='synthetic-session'}={}){
- let now=Date.now(),tid=90000;const requests=[],pending=[],errors=[],intervals=[],timers=new Map();
+function setup({cached=null,token='synthetic-session',offset=0}={}){
+ let now=Date.now()+offset,tid=90000;const requests=[],pending=[],errors=[],intervals=[],timers=new Map();
  const vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));
  const dom=new JSDOM(html,{url:'https://alrakah-org.github.io/hewaya-supabase/apps/supervisor/',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
   w.TextEncoder=TextEncoder;w.matchMedia=()=>({matches:false,addEventListener(){},addListener(){}});w.Date.now=()=>now;
@@ -37,6 +37,15 @@ test('one lightweight request preloads tweets and chat; repeated switching is im
 test('reopening restores messages and selected group before the network responds',async()=>{
  const h=setup();let saved;try{await warm(h);h.select('socialGroup',G1);h.flush();saved=h.snapshot();assert.ok(saved);assert.equal(saved.includes('synthetic-session'),false);}finally{h.close();}
  const reopened=setup({cached:saved});try{await tick();assert.equal(reopened.el('socialStage').value,'متوسط');assert.equal(reopened.el('socialGroup').value,G1);assert.match(reopened.el('socialFeed').textContent,/محادثة متوسط/);assert.equal(reopened.pending.length,1);assert.deepEqual(reopened.errors,[]);}finally{reopened.close();}
+});
+test('last messages are saved immediately and closing flushes the selected group',async()=>{
+ const h=setup();let saved;try{await warm(h);assert.ok(h.snapshot());h.select('socialGroup',G1);h.dom.window.dispatchEvent(new h.dom.window.Event('pagehide'));saved=h.snapshot();assert.equal(JSON.parse(saved).selection.groupId,G1);}finally{h.close();}
+ const reopened=setup({cached:saved});try{await tick();assert.match(reopened.el('socialFeed').textContent,/محادثة متوسط/);assert.equal(reopened.pending.length,1);}finally{reopened.close();}
+});
+test('several-day cache renders immediately while refreshing; old snapshots expire',async()=>{
+ const h=setup();let saved;try{await warm(h);saved=h.snapshot();}finally{h.close();}
+ const reopened=setup({cached:saved,offset:3*86400000});try{await tick();assert.match(reopened.el('socialFeed').textContent,/تغريدة متوسط/);assert.equal(reopened.pending.length,1);reopened.pending.shift().resolve(reopened.bundle());await tick();assert.deepEqual(reopened.errors,[]);}finally{reopened.close();}
+ const expired=setup({cached:saved,offset:8*86400000});try{await tick();assert.doesNotMatch(expired.el('socialFeed').textContent,/تغريدة متوسط/);assert.equal(expired.snapshot(),null);}finally{expired.close();}
 });
 test('cache cannot move to another session and logout clears it',async()=>{
  const h=setup();let saved;try{await warm(h);h.flush();saved=h.snapshot();h.el('supervisorLogoutBtn').click();assert.equal(h.snapshot(),null);assert.doesNotMatch(h.el('socialFeed').textContent,/تغريدة متوسط/);}finally{h.close();}
