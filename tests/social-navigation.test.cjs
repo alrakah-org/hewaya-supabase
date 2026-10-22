@@ -2,7 +2,7 @@ const {JSDOM,VirtualConsole}=require(process.env.JSDOM_PATH||'jsdom');
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 const html=fs.readFileSync(process.env.STUDENT_HTML||__dirname+'/../apps/student/index.html','utf8');
 const tick=()=>new Promise(r=>setImmediate(r));
-function setup(){
+function setup(stage='متوسط'){
  const requests=[],pending=[],errors=[],intervals=[],timers=[];let now=100000;
  const vc=new VirtualConsole();vc.on('jsdomError',e=>{if(!e.message.startsWith('Not implemented: navigation'))errors.push(e.message);});
  const dom=new JSDOM(html,{url:'https://alrakah-org.github.io/hewaya-supabase/apps/student/',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,beforeParse(w){
@@ -14,7 +14,7 @@ function setup(){
   w.fetch=async(url,o)=>{
    const p=JSON.parse(o.body);requests.push(p);
    if(p.action==='getStudentSocial'||p.action==='postStudentSocial'||p.action==='setStudentSocialLike')return new Promise((resolve,reject)=>{pending.push({p,resolve:data=>resolve({ok:true,json:async()=>data}),reject,signal:o.signal});});
-   return{ok:true,json:async()=>p.action==='studentLogin'?{success:true,id:p.id,name:'طالب',stage:'متوسط',balance:0}:{success:true,items:[],announcements:[],logs:[]}};
+   return{ok:true,json:async()=>p.action==='studentLogin'?{success:true,id:p.id,name:'طالب',stage,balance:0}:{success:true,items:[],announcements:[],logs:[]}};
   };
  }});
  const d=dom.window.document,el=id=>d.getElementById(id);
@@ -73,3 +73,25 @@ test('pending timeout leaves a usable retry and does not display a closed-stage 
  assert.match(h.el('studentSocialMessage').textContent,/تعذر التحميل/);assert.equal(h.el('studentSocialRetry').classList.contains('hidden'),false);
  }finally{h.close();}
 });
+
+for (const stage of ['أول ابتدائي','ثاني ابتدائي','ثالث ابتدائي','رابع ابتدائي','خامس ابتدائي','سادس ابتدائي','متوسط','ثانوي']) {
+ test('bottom navigation stays usable with slow social data: '+stage,async()=>{
+  const h=setup(stage);try{
+   await tick();
+   const select=index=>{
+    h.d.querySelector('.nav-btn[data-index="'+index+'"]').click();
+    const visible=[...h.d.querySelectorAll('.page-panel')].filter(p=>p.style.display!=='none');
+    assert.equal(visible.length,1);
+    assert.equal(visible[0].dataset.page,String(index));
+    assert.equal(h.d.querySelector('.nav-btn.active').dataset.index,String(index));
+   };
+   for(let n=0;n<5;n++)for(const i of [0,1,3,4,5,0,5,1])select(i);
+   for(const panel of h.d.querySelectorAll('.page-panel')){
+    const event=new h.dom.window.Event('transitionend');Object.defineProperty(event,'propertyName',{value:'transform'});panel.dispatchEvent(event);
+   }
+   await new Promise(resolve=>h.dom.window.requestAnimationFrame(resolve));
+   select(1);select(5);select(0);
+   assert.deepEqual(h.errors,[]);
+  }finally{h.close();}
+ });
+}
