@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta name="hawaya-version" content="supervisor-fast-social-20261017">
+  <meta name="hawaya-version" content="supervisor-ranking-export-20261025">
   <link rel="preconnect" href="https://uvcotcfemolqwkgypyeq.supabase.co" crossorigin>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -219,6 +219,10 @@
   .ranking-week-filters{display:flex;gap:8px;overflow-x:auto;padding:3px 0 10px;scrollbar-width:thin;}
   .ranking-week-btn{flex:0 0 auto;width:auto;margin:0;padding:9px 14px;border-radius:999px;background:#F3F0FA;color:var(--indigo);box-shadow:none;font-size:.8rem;}
   .ranking-week-btn.active{background:linear-gradient(95deg,var(--blue),var(--violet));color:#fff;}
+  .ranking-export-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+  .ranking-export-actions button{flex:1;min-width:130px;margin:0;}
+  .ranking-export-caption{font-size:.8rem;line-height:1.9;color:var(--text-muted);margin:0;}
+  #rankingExportStatus{font-size:.8rem;line-height:1.8;margin:10px 0 0;}
 
   /* ===================== عناصر مشتركة لإدارة القوائم (الجوائز / النصائح) ===================== */
   .list-item{
@@ -833,6 +837,16 @@
         <div id="rankingWeekFilters" class="ranking-week-filters"><button type="button" class="ranking-week-btn active" data-ranking-week="all">كل الأسابيع</button></div>
         <button type="button" id="showRankingBtn">إظهار الترتيب</button>
       </div>
+      <div id="rankingExportPanel" class="card hidden" aria-labelledby="rankingExportTitle">
+        <div id="rankingExportTitle" class="section-title">تحميل الرسم البياني</div>
+        <p id="rankingExportSummary" class="ranking-export-caption"></p>
+        <p class="ranking-export-caption">أعمدة مرتبة من الأعلى نقاطًا إلى الأقل، تشمل جميع النتائج المعروضة.</p>
+        <div class="ranking-export-actions">
+          <button type="button" id="rankingPdfBtn">تحميل PDF</button>
+          <button type="button" id="rankingExcelBtn" class="btn-secondary">تحميل إكسل</button>
+        </div>
+        <p id="rankingExportStatus" role="status" aria-live="polite"></p>
+      </div>
       <div id="rankingColumns" class="ranking-columns"></div>
     </div>
 
@@ -930,10 +944,15 @@
      ==================================================================== */
   const SUPERVISOR_NAMES = ['فارس مقبول', 'ناصر الصياح', 'عبدالرحمن بامشموس', 'بشارة الزبير', 'عبدالعزيز الجامع', 'فهد الخضير', 'أسامة نور', 'هادي باشا'];
   const SUPERVISOR_SESSION_KEY = 'hawaya_supervisor_session';
+  let rankingResult = null;
+  let rankingRequestId = 0;
+  let rankingExportBusy = false;
+  let rankingGroupsLoadId = 0;
   window.hawayaPushConfig={role:'supervisor',apiKey:SUPABASE_ANON_KEY,sessionKey:SUPERVISOR_SESSION_KEY,session:()=>{try{const s=JSON.parse(localStorage.getItem(SUPERVISOR_SESSION_KEY)||'null');return s?.token&&new Date(s.expiresAt).getTime()>Date.now()?s:null;}catch{return null;}},loggedIn:()=>!document.getElementById('appView').classList.contains('hidden')};
   let currentSupervisorName = '';
 
   function showSupervisorLogin(errorText) {
+    invalidateRanking();
     document.getElementById('supervisorLoginView').classList.remove('hidden');
     document.getElementById('appView').classList.add('hidden');
     document.getElementById('supervisorLoginError').textContent = errorText || '';
@@ -2949,10 +2968,24 @@
   });
 
   async function loadRankingGroupOptions() {
+    invalidateRanking();
+    const loadId = ++rankingGroupsLoadId;
     const stage = document.getElementById('rankingStageSelect').value;
-    const data = await callAppsScript({ action: 'getGroups', stage: stage });
-    document.getElementById('rankingGroupChecks').innerHTML = `<label style="display:flex;gap:8px"><input type="checkbox" id="rankingAllGroups" checked style="width:22px;margin:0">كل المجموعات</label>` + (data.groups || []).map(g => `<label style="display:flex;gap:8px"><input class="ranking-group-check" type="checkbox" value="${g.id}" style="width:22px;margin:0">${g.name}</label>`).join('');
+    const button = document.getElementById('showRankingBtn');
+    button.disabled = true;
+    document.getElementById('rankingGroupChecks').textContent = 'جاري تحميل المجموعات...';
+    try {
+      const data = await callAppsScript({ action: 'getGroups', stage: stage });
+      if (loadId !== rankingGroupsLoadId || stage !== document.getElementById('rankingStageSelect').value) return;
+      if (!data.success) throw new Error('تعذر تحميل المجموعات');
+      document.getElementById('rankingGroupChecks').innerHTML = `<label style="display:flex;gap:8px"><input type="checkbox" id="rankingAllGroups" checked style="width:22px;margin:0">كل المجموعات</label>` + (data.groups || []).map(g => `<label style="display:flex;gap:8px"><input class="ranking-group-check" type="checkbox" value="${g.id}" style="width:22px;margin:0">${g.name}</label>`).join('');
+    } catch (_) {
+      if (loadId === rankingGroupsLoadId) document.getElementById('rankingGroupChecks').innerHTML = '<p role="alert">تعذر تحميل المجموعات. <button type="button" id="retryRankingGroupsBtn" class="btn-secondary">إعادة المحاولة</button></p>';
+    } finally {
+      if (loadId === rankingGroupsLoadId) button.disabled = false;
+    }
   }
+  document.getElementById('rankingGroupChecks').addEventListener('click', e => { if (e.target.closest('#retryRankingGroupsBtn')) loadRankingGroupOptions(); });
   let selectedRankingWeek = 'all';
   async function loadRankingWeeks() {
     const wrap = document.getElementById('rankingWeekFilters');
@@ -2961,7 +2994,7 @@
     catch (_) { data = { success: false }; }
     const supported = data.success && Array.isArray(data.weeks) && data.weeks.length;
     const weeks = supported ? data.weeks : [{ value:'all', label:'كل الأسابيع' }];
-    if (!weeks.some(w => String(w.value) === String(selectedRankingWeek))) selectedRankingWeek = 'all';
+    if (!weeks.some(w => String(w.value) === String(selectedRankingWeek))) { invalidateRanking(); selectedRankingWeek = 'all'; }
     wrap.innerHTML = weeks.map(w => `<button type="button" class="ranking-week-btn ${String(w.value) === String(selectedRankingWeek) ? 'active' : ''}" data-ranking-week="${w.value}">${w.label}</button>`).join('');
     if (!supported) {
       const notice = document.createElement('p');
@@ -2973,35 +3006,124 @@
   document.getElementById('rankingWeekFilters').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-ranking-week]');
     if (!btn) return;
+    invalidateRanking();
     selectedRankingWeek = btn.dataset.rankingWeek;
     document.querySelectorAll('[data-ranking-week]').forEach(x => x.classList.toggle('active', x === btn));
   });
   document.getElementById('rankingStageSelect').addEventListener('change', loadRankingGroupOptions);
-  document.getElementById('rankingModeSelect').addEventListener('change', e => document.getElementById('rankingGroupsLabel').classList.toggle('hidden', e.target.value === 'individuals'));
+  document.getElementById('rankingModeSelect').addEventListener('change', e => {
+    invalidateRanking();
+    document.getElementById('rankingGroupsLabel').classList.toggle('hidden', e.target.value === 'individuals');
+  });
+  document.getElementById('rankingGroupChecks').addEventListener('change', invalidateRanking);
+  document.getElementById('rankingDetailsCheck').addEventListener('change', invalidateRanking);
+  document.getElementById('supervisorLogoutBtn').addEventListener('click', invalidateRanking);
+  window.addEventListener('storage', e => { if (e.key === SUPERVISOR_SESSION_KEY || e.key === null) invalidateRanking(); });
+
+  function invalidateRanking() {
+    rankingRequestId++;
+    rankingResult = null;
+    document.getElementById('rankingExportPanel').classList.add('hidden');
+    document.getElementById('rankingExportStatus').textContent = '';
+    document.getElementById('rankingColumns').innerHTML = '';
+  }
+  let rankingExporterPromise;
+  function loadRankingExporter() {
+    if (window.HawayaRankingExport) return Promise.resolve(window.HawayaRankingExport);
+    if (rankingExporterPromise) return rankingExporterPromise;
+    rankingExporterPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      const timeout = setTimeout(() => finish(false), 15000);
+      function finish(ok) {
+        clearTimeout(timeout);
+        script.onload = script.onerror = null;
+        if (ok && window.HawayaRankingExport) resolve(window.HawayaRankingExport);
+        else { script.remove(); rankingExporterPromise = null; reject(new Error('تعذر تجهيز الملف. تحقق من الاتصال وأعد المحاولة.')); }
+      }
+      script.onload = () => finish(true);
+      script.onerror = () => finish(false);
+      script.src = 'ranking-export.js?v=20261025';
+      document.head.appendChild(script);
+    });
+    return rankingExporterPromise;
+  }
+  async function exportRanking(format) {
+    if (!rankingResult || rankingExportBusy) return;
+    const snapshot = rankingResult;
+    const status = document.getElementById('rankingExportStatus');
+    const buttons = [document.getElementById('rankingPdfBtn'), document.getElementById('rankingExcelBtn')];
+    rankingExportBusy = true;
+    buttons.forEach(b => b.disabled = true);
+    status.style.color = 'var(--text-muted)';
+    status.textContent = 'جاري تجهيز الرسم البياني...';
+    try {
+      const exporter = await loadRankingExporter();
+      if (rankingResult !== snapshot) return;
+      const report = exporter.createReport(snapshot.columns, snapshot.selection);
+      const blob = format === 'pdf' ? await exporter.pdf(report, {
+        isCancelled: () => rankingResult !== snapshot,
+        onProgress: (page, total) => { status.textContent = `جاري تجهيز الصفحة ${page} من ${total}...`; }
+      }) : exporter.xlsx(report);
+      if (rankingResult !== snapshot) return;
+      exporter.download(blob, exporter.filename(report, format === 'pdf' ? 'pdf' : 'xlsx'));
+      status.textContent = 'تم تجهيز الملف وبدء تنزيله.';
+      status.style.color = 'var(--success)';
+    } catch (error) {
+      if (rankingResult === snapshot) { status.textContent = error.message || 'تعذر تحميل الملف. حاول مرة أخرى.'; status.style.color = 'var(--error)'; }
+    } finally {
+      rankingExportBusy = false;
+      buttons.forEach(b => b.disabled = false);
+    }
+  }
+  document.getElementById('rankingPdfBtn').addEventListener('click', () => exportRanking('pdf'));
+  document.getElementById('rankingExcelBtn').addEventListener('click', () => exportRanking('xlsx'));
 
   document.getElementById('showRankingBtn').addEventListener('click', async () => {
+    invalidateRanking();
+    const requestId = rankingRequestId;
     const wrap = document.getElementById('rankingColumns');
     wrap.innerHTML = '<div class="card"><p class="list-empty">جاري تحميل الترتيب...</p></div>';
     const allBox = document.getElementById('rankingAllGroups');
-    const groupIds = allBox && !allBox.checked ? Array.from(document.querySelectorAll('.ranking-group-check:checked')).map(x=>x.value) : [];
+    const selection = {
+      stage: document.getElementById('rankingStageSelect').value,
+      mode: document.getElementById('rankingModeSelect').value,
+      weekNumber: selectedRankingWeek,
+      weekLabel: document.querySelector('[data-ranking-week].active')?.textContent || (selectedRankingWeek === 'all' ? 'كل الأسابيع' : 'الأسبوع '+selectedRankingWeek)
+    };
+    if (selection.mode === 'groups' && document.getElementById('retryRankingGroupsBtn')) {
+      wrap.innerHTML = '<div class="card"><p class="list-empty">أعد تحميل المجموعات قبل عرض الترتيب.</p></div>';
+      return;
+    }
+    const groupIds = selection.mode === 'groups' && allBox && !allBox.checked ? Array.from(document.querySelectorAll('.ranking-group-check:checked')).map(x=>x.value) : [];
+    if (selection.mode === 'groups' && allBox && !allBox.checked && !groupIds.length) {
+      wrap.innerHTML = '<div class="card"><p class="list-empty">اختر مجموعة واحدة على الأقل أو فعّل كل المجموعات.</p></div>';
+      return;
+    }
     let data;
     try {
-      data = await callAppsScript({ action: 'getAdvancedRanking', category: document.getElementById('rankingStageSelect').value, mode: document.getElementById('rankingModeSelect').value, groupIds, details: document.getElementById('rankingDetailsCheck').checked, weekNumber: selectedRankingWeek });
+      data = await callAppsScript({ action: 'getAdvancedRanking', category: selection.stage, mode: selection.mode, groupIds, details: document.getElementById('rankingDetailsCheck').checked, weekNumber: selection.weekNumber });
     } catch (_) {
+      if (requestId !== rankingRequestId) return;
       wrap.innerHTML = '<div class="card"><p role="alert">تعذر تحميل الترتيب. تحقق من الاتصال ثم حاول مرة أخرى.</p></div>';
       return;
     }
+    if (requestId !== rankingRequestId) return;
     const columns = data.columns || [];
-    if (selectedRankingWeek !== 'all' && String(data.weekNumber) !== String(selectedRankingWeek)) {
+    if (selection.weekNumber !== 'all' && String(data.weekNumber) !== String(selection.weekNumber)) {
       wrap.innerHTML = '<div class="card"><p role="alert">تعذر تطبيق فلتر الأسبوع المحدد. أعد تحميل التطبيق ثم حاول مرة أخرى.</p></div>';
       return;
     }
     if (!data.success || !columns.length) { wrap.innerHTML = '<div class="card"><p class="list-empty">لا توجد نتائج مطابقة</p></div>'; return; }
     wrap.innerHTML = columns.map((g, groupIndex) => `<div class="ranking-column card">
       <div class="section-title">${groupIndex + 1}. ${g.name}</div>
-      <div class="ranking-total">مجموع المجموعة: ${g.totalPoints}</div>
+      <div class="ranking-total">${selection.mode === 'individuals' ? 'مجموع النقاط' : 'مجموع المجموعة'}: ${g.totalPoints}</div>
       ${(g.members || []).map((s, i) => `<div class="list-item" style="padding:10px 0;align-items:flex-start"><b style="width:26px;">${i + 1}</b><span style="flex:1;">${s.name}<small style="display:block">${((s.details||{}).items||[]).map(x=>`${x.count} ${x.label}`).join('، ')}</small>${((s.details||{}).edits||[]).map(x=>`<small style="display:block;color:var(--pink)">${x}</small>`).join('')}</span><strong>${s.balance}</strong></div>`).join('')}
     </div>`).join('');
+    if (selection.mode === 'groups' || columns.some(g => (g.members || []).length)) {
+      rankingResult = {columns, selection};
+      document.getElementById('rankingExportSummary').textContent = selection.stage+' - '+selection.weekLabel+(selection.mode === 'groups' ? ' - مقارنة المجموعات وترتيب طلاب كل مجموعة' : ' - ترتيب الطلاب');
+      document.getElementById('rankingExportPanel').classList.remove('hidden');
+    }
   });
   // Ranking data loads when its tab is opened.
 
