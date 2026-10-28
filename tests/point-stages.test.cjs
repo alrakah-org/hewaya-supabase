@@ -9,7 +9,7 @@ function setup(){
   const stages=['elementary_456','middle','secondary'];
   const items=stages.map((stage,i)=>({id:`item-${i}`,code:i?'lesson__'+stage:'lesson',base_code:'lesson',stage_category:stage,name:'الدرس '+stage,points_per_mark:100*(i+1),max_marks:5,limit_period:'weekly',active:true,allowed_weekdays:[0,2],sort_order:20}));
   const students=stages.map((stage,i)=>({id:i+1,student_code:'student-'+stage,grade:['رابع ابتدائي','أول متوسط','أول ثانوي'][i]}));
-  const awards=[{student_id:2,point_item_id:'item-1',quantity:2,week_number:6,point_items:{code:'lesson__middle',base_code:'lesson'}}];
+  const awards=[{id:1,student_id:2,point_item_id:'item-1',quantity:2,week_number:6,point_items:{code:'lesson__middle',base_code:'lesson'}}];
   const writes=[];let handler, emptyPatch=false;
   const mockFetch=async(url,init={})=>{
     const u=new URL(url), table=u.pathname.split('/').pop(), q=u.searchParams, method=init.method||'GET';
@@ -19,9 +19,9 @@ function setup(){
       if(table==='edge_supervisor_session')return new Response(JSON.stringify([{supervisor_name:'test'}]));
     }
     let data=table==='point_items'?items:table==='students'?students:table==='point_awards'?awards:[];
-    for(const [k,v] of q){if(v.startsWith('eq.'))data=data.filter(x=>String(x[k])===v.slice(3));if(v==='is.null')data=data.filter(x=>x[k]==null);}
+    for(const [k,v] of q){if(v.startsWith('eq.'))data=data.filter(x=>String(x[k])===v.slice(3));if(v.startsWith('gt.'))data=data.filter(x=>Number(x[k])>Number(v.slice(3)));if(v==='is.null')data=data.filter(x=>x[k]==null);}
     if(method==='PATCH'){const payload=JSON.parse(init.body);writes.push({table,data,payload});if(emptyPatch)return new Response('[]');data.forEach(x=>Object.assign(x,payload));}
-    if(method==='POST'){const payload=JSON.parse(init.body);const row={id:'created-'+writes.length,...payload};writes.push({table,payload});(table==='point_items'?items:awards).push(row);data=[row];}
+    if(method==='POST'){const payload=JSON.parse(init.body);const row={id:table==='point_items'?'created-'+writes.length:awards.length+1,...payload};writes.push({table,payload});(table==='point_items'?items:awards).push(row);data=[row];}
     return new Response(JSON.stringify(data));
   };
   class FixedDate extends Date { constructor(...args){super(...(args.length?args:['2026-10-04T16:30:00Z']));} static now(){return new Date('2026-10-04T16:30:00Z').getTime();} }

@@ -3,7 +3,7 @@ declare const Deno: { env: { get(name: string): string | undefined }; serve(hand
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const REST = `${SUPABASE_URL}/rest/v1`;
-const API_VERSION = 'point-stages-20261004';
+const API_VERSION = 'complete-ranking-points-20261028';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -111,6 +111,23 @@ async function requireSupervisor(req: Request) {
 
 async function rows(path: string) { return (await db(path, { headers:{ Prefer:'return=representation' } })) || []; }
 
+// Point ledgers can exceed PostgREST's per-response row limit. Read every page
+// in primary-key order; a short page can still be capped by server settings.
+// Callers include id in select and keep their student/week filters on every page.
+async function pointRows(path: string) {
+  const result: any[] = [];
+  let lastId = 0;
+  while (true) {
+    const page = await rows(`${path}&id=gt.${lastId}&order=id.asc&limit=1000`);
+    if (!Array.isArray(page)) throw new Error('Invalid points response');
+    if (!page.length) return result;
+    const nextId = Number(page[page.length - 1].id);
+    if (!Number.isSafeInteger(nextId) || nextId <= lastId) throw new Error('Points pagination did not advance');
+    result.push(...page);
+    lastId = nextId;
+  }
+}
+
 async function balances(studentIds: number[], week?: number | null) {
   const ids=[...new Set(studentIds.map(Number).filter(Boolean))];
   const result:Record<number,number>={};
@@ -120,9 +137,9 @@ async function balances(studentIds: number[], week?: number | null) {
   const wf=week?`&week_number=eq.${week}`:'';
   const wi=week?weekRange(Number(week)):null;
   const [awards,attendance,tx]=await Promise.all([
-    rows(`/point_awards?${filter}${wf}&select=student_id,total_points`),
-    rows(`/attendance?${filter}&select=student_id,points${wi?`&attendance_date=gte.${wi.sunday}&attendance_date=lte.${wi.saturday}`:''}`),
-    rows(`/point_transactions?${filter}${wf}&select=student_id,amount`)
+    pointRows(`/point_awards?${filter}${wf}&select=id,student_id,total_points`),
+    pointRows(`/attendance?${filter}&select=id,student_id,points${wi?`&attendance_date=gte.${wi.sunday}&attendance_date=lte.${wi.saturday}`:''}`),
+    pointRows(`/point_transactions?${filter}${wf}&select=id,student_id,amount`)
   ]);
   awards.forEach((x:any)=>{result[Number(x.student_id)]=(result[Number(x.student_id)]||0)+Number(x.total_points||0)});
   attendance.forEach((x:any)=>{result[Number(x.student_id)]=(result[Number(x.student_id)]||0)+Number(x.points||0)});
@@ -152,18 +169,19 @@ async function studentLogin(body:any) {
   const sid=await verifyStudent(body); if(!sid) return {success:false,error:'بيانات الدخول غير صحيحة'};
   const s=await studentRecord(sid); if(!s) return {success:false,error:'الحساب غير موجود'};
   const peers=await rows(`/students?grade=eq.${encodeURIComponent(s.stage)}&active=eq.true&select=id`);
-  const values=await Promise.all(peers.map(async(x:any)=>({id:x.id,b:await balance(x.id)})));
-  values.sort((a,b)=>b.b-a.b); const rank=values.findIndex(x=>x.id===sid)+1;
+  const peerTotals=await balances(peers.map((x:any)=>Number(x.id)));
+  const values=peers.map((x:any)=>({id:x.id,b:peerTotals[Number(x.id)]||0}));
+  values.sort((a:any,b:any)=>b.b-a.b); const rank=values.findIndex((x:any)=>x.id===sid)+1;
   return {success:true,...s,rank};
 }
 
 async function announcements() {
-  const data=await rows('/announcements?active=eq.true&order=published_at.desc&select=id,body,image_url,published_at');
+  const data=await rows(`/announcements?active=eq.true&target_stage=is.null&published_at=lte.${encodeURIComponent(new Date().toISOString())}&or=(expires_at.is.null,expires_at.gt.${encodeURIComponent(new Date().toISOString())})&order=published_at.desc&select=id,body,image_url,published_at`);
   return {success:true,announcements:data.map((x:any)=>({rowIndex:x.id,text:x.body||'',imageUrl:x.image_url||'',date:new Date(x.published_at).toLocaleDateString('ar-SA')}))};
 }
 
 async function dailyTip() {
-  const x=(await rows('/tips?active=eq.true&order=published_at.desc&limit=1&select=body'))[0];
+  const x=(await rows(`/tips?active=eq.true&target_stage=is.null&published_at=lte.${encodeURIComponent(new Date().toISOString())}&order=published_at.desc,id.desc&limit=1&select=body`))[0];
   return {success:true,tip:x?.body||''};
 }
 
@@ -328,9 +346,9 @@ async function groups(stage='', week: number | null = null) {
 async function pointsLog(body:any) {
   const s=(await rows(`/students?student_code=eq.${encodeURIComponent(String(body.id||''))}&select=id`))[0]; if(!s)return {success:false,log:[]};
   const [a,t,at]=await Promise.all([
-    rows(`/point_awards?student_id=eq.${s.id}&order=created_at.desc&select=activity_date,quantity,total_points,note,created_at,point_items(name)`),
-    rows(`/point_transactions?student_id=eq.${s.id}&order=created_at.desc&select=activity_date,amount,reason,created_at,supervisor_name`),
-    rows(`/attendance?student_id=eq.${s.id}&order=created_at.desc&select=attendance_date,points,attendance_type,created_at`)
+    pointRows(`/point_awards?student_id=eq.${s.id}&select=id,activity_date,quantity,total_points,note,created_at,point_items(name)`),
+    pointRows(`/point_transactions?student_id=eq.${s.id}&select=id,activity_date,amount,reason,created_at,supervisor_name`),
+    pointRows(`/attendance?student_id=eq.${s.id}&select=id,attendance_date,points,attendance_type,created_at`)
   ]);
   const log=[...a.map((x:any)=>({date:x.activity_date,amount:x.total_points,total:x.total_points,count:x.quantity,label:x.point_items?.name||'',reason:x.point_items?.name||'',created_at:x.created_at})),...t.map((x:any)=>({date:x.activity_date,amount:x.amount,total:x.amount,count:1,label:x.reason,reason:x.reason,created_at:x.created_at})),...at.map((x:any)=>({date:x.attendance_date,amount:x.points,total:x.points,count:1,label:x.attendance_type==='early'?'حضور مبكر':'حضور عادي',reason:'الحضور',created_at:x.created_at}))].sort((x,y)=>String(y.created_at).localeCompare(String(x.created_at)));
   return {success:true,log};
@@ -344,6 +362,20 @@ Deno.serve(async (req) => {
     if(action==='getAppVersion')return json({success:true,version:API_VERSION,pointStages:POINT_STAGES});
     if(action==='supervisorLogin')return json(await supervisorLogin(body));
     if(action==='studentLogin')return json(await studentLogin(body));
+    if(action==='getStudentContent'){
+      const result=await rpc('edge_student_content',{p_code:String(body.id||''),p_password:String(body.password||'')});
+      return result?json(result):json({success:false,error:'بيانات الدخول غير صحيحة'},401);
+    }
+    if(['getSupervisorContent','addAnnouncement','addTip'].includes(action)){
+      const token=req.headers.get('x-hawaya-session')||'';
+      if(!token)return json({success:false,error:'انتهت جلسة المشرف، سجل الدخول مجددًا'},401);
+      const stage=body.stage==='all'?'all':pointStage(body.stage);
+      const auth={p_token_hash:await sha256(token),p_stage:stage};
+      const result=action==='getSupervisorContent'?await rpc('edge_supervisor_content',auth):await rpc('edge_publish_stage_content',{
+        ...auth,p_kind:action==='addTip'?'tip':'announcement',p_body:String(body.text||''),p_image:action==='addAnnouncement'?String(body.imageUrl||''):null
+      });
+      return result?json(result):json({success:false,error:'انتهت جلسة المشرف، سجل الدخول مجددًا'},401);
+    }
     if(action==='getAnnouncements')return json(await announcements());
     if(action==='getDailyTip')return json(await dailyTip());
     if(action==='getStudentAttendanceStatus')return json(await attendanceStatus(body));
@@ -351,7 +383,7 @@ Deno.serve(async (req) => {
     if(action==='getDayPointsContext')return json(await getDayContext(body));
     if(action==='saveDayPoints')return json(await saveDayPoints(body));
     if(action==='getPointsLog'||action==='getStudentDetailedPointsLog')return json(await pointsLog(body));
-    if(action==='getLeaderboard')return json({success:true,leaderboard:(await studentsList(body.stage||'')).sort((a,b)=>b.balance-a.balance)});
+    if(action==='getLeaderboard')return json({success:true,leaderboard:(await studentsList(body.stage||'')).sort((a:any,b:any)=>b.balance-a.balance)});
     if(action==='getStudentGroupData'){
       const sid=await verifyStudent(body); if(!sid)return json({success:false,error:'بيانات الدخول غير صحيحة'});
       const gm=(await rows(`/group_memberships?student_id=eq.${sid}&left_at=is.null&select=group_id`))[0];
@@ -359,12 +391,13 @@ Deno.serve(async (req) => {
       const g=(await rows(`/groups?id=eq.${gm.group_id}&active=eq.true&select=id,name,stage_category`))[0];
       if(!g)return json({success:true,hasGroup:false});
       const memberships=await rows(`/group_memberships?group_id=eq.${gm.group_id}&left_at=is.null&select=student_id,students(student_code,full_name,grade)`);
-      const members=await Promise.all(memberships.map(async(m:any)=>({
+      const groupTotals=await balances(memberships.map((m:any)=>Number(m.student_id)));
+      const members=memberships.map((m:any)=>({
         id:m.students?.student_code,
         name:m.students?.full_name||'',
         stage:m.students?.grade||'',
-        balance:await balance(m.student_id)
-      })));
+        balance:groupTotals[Number(m.student_id)]||0
+      }));
       members.sort((a:any,b:any)=>b.balance-a.balance||String(a.name).localeCompare(String(b.name),'ar'));
       const group={id:g.id,name:g.name,stage:categoryLabel(g.stage_category),members};
       return json({success:true,hasGroup:true,group});
@@ -418,9 +451,7 @@ Deno.serve(async (req) => {
     if(action==='markAttendance')return json(await markAttendance({id:body.rawScan||body.id,tier:body.tier||'normal'},'supervisor'));
     if(action==='bulkMarkAttendance'){const results=[];for(const id of (body.ids||[]))results.push({id,...await markAttendance({id,tier:'normal'},'supervisor')});return json({success:true,results});}
     if(action==='getTodayAttendees'){const wi=riyadhParts();const a=await rows(`/attendance?attendance_date=eq.${wi.date}&select=students(student_code)`);return json({success:true,ids:a.map((x:any)=>x.students?.student_code).filter(Boolean)});}
-    if(action==='addAnnouncement'){await db('/announcements',{method:'POST',body:JSON.stringify({body:body.text||'',image_url:body.imageUrl||null,active:true})});return json({success:true});}
     if(action==='deleteAnnouncement'){await db(`/announcements?id=eq.${body.rowIndex}`,{method:'DELETE'});return json({success:true});}
-    if(action==='addTip'){await db('/tips',{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({active:false})}).catch(()=>{});await db('/tips',{method:'POST',body:JSON.stringify({body:body.text,active:true})});return json({success:true});}
     if(action==='getGroups')return json({success:true,groups:await groups(body.stage||'')});
     if(action==='saveGroup'){
       let gid=body.groupId; if(gid){await db(`/groups?id=eq.${gid}`,{method:'PATCH',body:JSON.stringify({name:body.name,stage_category:stageCategory(body.stage)})});await db(`/group_memberships?group_id=eq.${gid}&left_at=is.null`,{method:'PATCH',body:JSON.stringify({left_at:riyadhParts().date})});}else{const g=await db('/groups',{method:'POST',body:JSON.stringify({name:body.name,stage_category:stageCategory(body.stage),active:true})});gid=g[0].id;}
@@ -447,9 +478,9 @@ Deno.serve(async (req) => {
         const filter=`student_id=in.(${studentIds.join(',')})`;
         const range=week?weekRange(week):null;
         const [awardRows,attendanceRows,transactionRows]=await Promise.all([
-          rows(`/point_awards?${filter}${week?`&week_number=eq.${week}`:''}&select=student_id,quantity,point_items(name)`),
-          rows(`/attendance?${filter}${range?`&attendance_date=gte.${range.sunday}&attendance_date=lte.${range.saturday}`:''}&select=student_id,attendance_type`),
-          rows(`/point_transactions?${filter}${week?`&week_number=eq.${week}`:''}&select=student_id,reason`)
+          pointRows(`/point_awards?${filter}${week?`&week_number=eq.${week}`:''}&select=id,student_id,quantity,point_items(name)`),
+          pointRows(`/attendance?${filter}${range?`&attendance_date=gte.${range.sunday}&attendance_date=lte.${range.saturday}`:''}&select=id,student_id,attendance_type`),
+          pointRows(`/point_transactions?${filter}${week?`&week_number=eq.${week}`:''}&select=id,student_id,reason`)
         ]);
         awardRows.forEach((x:any)=>addDetail(Number(x.student_id),x.point_items?.name||'نقاط',Number(x.quantity||0)));
         attendanceRows.forEach((x:any)=>addDetail(Number(x.student_id),x.attendance_type==='early'?'حضور مبكر':'حضور عادي',1));
