@@ -11,7 +11,8 @@ function setup({saved=null,permission='default',ios=false,fail=false,delay=false
  Object.defineProperty(w.document,'visibilityState',{get:()=>visibility});
  const requests=[];w.matchMedia=()=>({matches:false});
  if(ios)Object.defineProperty(w.navigator,'userAgent',{value:'iPhone'});
- w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
+ let modalCalls=0;
+ w.HTMLDialogElement.prototype.showModal=function(){modalCalls++;this.open=true;};w.HTMLDialogElement.prototype.show=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  w.HawayaPushStore={get:async()=>stored?structuredClone(stored):null,set:async(_,value)=>{stored=structuredClone(value);}};
  w.hawayaPushConfig={role,apiKey:'public-fixture',sessionKey:'fixture-session',session:()=>session,loggedIn:()=>!!session};
  w.Notification={permission,requestPermission:async()=>{permissionCalls++;w.Notification.permission='granted';return 'granted';}};w.PushManager=function(){};
@@ -25,8 +26,16 @@ function setup({saved=null,permission='default',ios=false,fail=false,delay=false
  };
  if(unsupported){delete w.PushManager;delete w.Notification;}
  w.eval(script);
- return{w,requests,get saved(){return stored;},get prompts(){return permissionCalls;},get unsubscribed(){return unsubscribed;},get closed(){return closed;},get registrations(){return registered;},get showing(){return w.document.querySelector('.push-dialog').open;},setSession(value){session=value;},setVisibility(value){visibility=value;w.document.dispatchEvent(new w.Event('visibilitychange'));},dismiss:()=>w.document.querySelector('.push-close').click(),resolve(){pending();},toggle:()=>w.document.querySelector('.push-toggle').onclick(),open:()=>w.document.getElementById('pushOpenBtn').click(),close:()=>w.close()};
+ return{w,requests,get modalCalls(){return modalCalls;},get saved(){return stored;},get prompts(){return permissionCalls;},get unsubscribed(){return unsubscribed;},get closed(){return closed;},get registrations(){return registered;},get showing(){return w.document.querySelector('.push-dialog').open;},setSession(value){session=value;},setVisibility(value){visibility=value;w.document.dispatchEvent(new w.Event('visibilitychange'));},dismiss:()=>w.document.querySelector('.push-close').click(),resolve(){pending();},toggle:()=>w.document.querySelector('.push-toggle').onclick(),open:()=>w.document.getElementById('pushOpenBtn').click(),close:()=>w.close()};
 }
+test('automatic student reminders keep navigation usable; the bell still opens modal settings',async()=>{
+ const h=setup();try{
+  await settle();assert.equal(h.showing,true);assert.equal(h.modalCalls,0);
+  const nav=h.w.document.createElement('button');nav.className='nav-btn';h.w.document.body.appendChild(nav);nav.click();assert.equal(h.showing,false);
+  await h.w.hawayaPush.onLogin();assert.equal(h.showing,false);
+  h.open();assert.equal(h.showing,true);assert.equal(h.modalCalls,1);
+ }finally{h.close();}
+});
 const enabled={enabled:true,binding:'old-binding',owner:'student:fixture',deviceToken:'a'.repeat(64),endpoint:'https://fcm.googleapis.com/fcm/send/fixture'};
 test('login never prompts; explicit enable subscribes and stores no application credential',async()=>{
  const h=setup();try{await settle();assert.equal(h.prompts,0);assert.equal(h.registrations,0);h.open();await h.toggle();assert.equal(h.prompts,1);assert.equal(h.saved.enabled,true);assert.equal(h.saved.binding,'new-binding');assert.equal(JSON.stringify(h.saved).includes('synthetic-password'),false);assert.equal(h.requests.find(r=>r.action==='subscribe').password,'synthetic-password');}finally{h.close();}

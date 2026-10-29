@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta name="hawaya-version" content="student-navigation-20261022">
+<meta name="hawaya-version" content="student-entry-navigation-20261029">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>هواية</title>
@@ -413,9 +413,9 @@
 .social-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 .student-social-nav-icon{width:27px;height:27px;fill:currentColor}
 </style><style>.student-pinned-label{font-size:10px;color:#8745a8;font-weight:700;margin-bottom:9px}</style>
-<link rel="stylesheet" href="../shared/notifications.css?v=20261015">
+<link rel="stylesheet" href="../shared/notifications.css?v=20261029">
 <script src="../shared/push-store.js?v=20261015" defer></script>
-<script src="../shared/notifications.js?v=20261017" defer></script>
+<script src="../shared/notifications.js?v=20261029" defer></script>
 </head>
 <body>
 
@@ -459,6 +459,7 @@
       <label>الرقم السري (PIN)<input type="text" id="loginPw" inputmode="numeric" placeholder="مثال: 4821" required></label>
       <button type="submit" id="loginBtn">دخول</button>
       <p class="error" id="loginError"></p>
+      <button type="button" id="reloadLoginBtn" class="btn-secondary hidden">تحديث التطبيق والمحاولة مجددًا</button>
     </form>
   </div>
 </div>
@@ -1240,20 +1241,38 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   });
 
   async function studentLogin(id, pw) {
-    return callAppsScript({ action: 'studentLogin', id: id, password: pw });
+    // Authentication is read-only: retry a transient connection/server failure
+    // once, with a deadline. Point saves and other writes are never retried here.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try { return await callAppsScript({ action: 'studentLogin', id: id, password: pw }, { timeoutMs: 12000 }); }
+      catch (error) {
+        if (attempt || (error.status && ![502,503,504].includes(error.status))) throw error;
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
+    }
   }
 
   // ====== الجلسة ======
+  let memorySession = null;
   function saveSession(id, pw) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ id: id, pw: pw }));
+    const session = { id: id, pw: pw };
+    // Storage may be blocked or full on a student's device. Keep the verified
+    // session for this open page instead of rejecting a successful login.
+    memorySession = session;
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); memorySession = null; } catch (_) {}
   }
   function getSession() {
+    if (memorySession) return memorySession;
     try {
       const raw = localStorage.getItem(SESSION_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch (_) { return null; }
   }
-  function clearSession() { window.hawayaPush?.disconnect(); localStorage.removeItem(SESSION_KEY); }
+  function clearSession() {
+    memorySession = null;
+    try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+    return Promise.resolve().then(() => window.hawayaPush?.disconnect()).catch(() => {});
+  }
 
   // ====== عرض الواجهات ======
   const loadingView = document.getElementById('loadingView');
@@ -1270,6 +1289,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     appView.classList.add('hidden');
     loginView.classList.remove('hidden');
     document.getElementById('loginError').textContent = errorText || '';
+    document.getElementById('reloadLoginBtn').classList.toggle('hidden', !errorText);
   }
   function showApp(data) {
     loadingView.classList.add('hidden');
@@ -1277,15 +1297,14 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     appView.classList.remove('hidden');
     populateStudentData(data);
     resetPagesToHome();
-    if(window.resetStudentSocial)window.resetStudentSocial();
-    loadAnnouncements();
+    // Optional widgets load independently after navigation is ready. A failed
+    // widget must not send an authenticated student back to the login screen.
+    [() => window.resetStudentSocial?.(), loadAnnouncements, loadDailyTip,
+      loadAchievements, loadMyPointsLog, () => window.hawayaPush?.onLogin()
+    ].forEach(load => { Promise.resolve().then(load).catch(() => {}); });
     // العشرة الأوائل مخفية حاليًا (ترقبوا الحفل) — تعطيل تحميلها مؤقتًا
     // loadLeaderboard();
-    loadDailyTip();
-    loadAchievements();
-    loadMyPointsLog();
     if(notificationTarget==='points'){goToPage(1);loadMyGroup();}
-    window.hawayaPush?.onLogin();
   }
 
   function populateStudentData(data) {
@@ -1385,8 +1404,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
 
   // ====== تسجيل الخروج ======
   document.getElementById('logoutBtn').addEventListener('click', async () => {
-    if(window.hawayaPush)await window.hawayaPush.disconnect();
-    localStorage.removeItem(SESSION_KEY);
+    await clearSession();
     location.reload();
   });
 
@@ -1427,6 +1445,9 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
   });
 
   // ====== نموذج تسجيل الدخول اليدوي ======
+  document.getElementById('reloadLoginBtn').addEventListener('click', () => {
+    location.replace(location.pathname + '?refresh=' + Date.now());
+  });
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('loginId').value.trim();
@@ -1434,27 +1455,37 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
     loginError.textContent = '';
+    document.getElementById('reloadLoginBtn').classList.add('hidden');
 
     if (!id || !pw) { loginError.textContent = 'الرجاء إدخال رقم الطالب والرقم السري'; return; }
 
     loginBtn.disabled = true;
     loginBtn.textContent = 'جاري الدخول...';
+    let data;
     try {
-      const data = await studentLogin(id, pw);
+      data = await studentLogin(id, pw);
       if (!data.success) {
         loginError.textContent = data.error || 'بيانات الدخول غير صحيحة';
         loginBtn.disabled = false;
         loginBtn.textContent = 'دخول';
         return;
       }
-      saveSession(id, pw);
-      showApp(data);
     } catch (err) {
       loginError.textContent = 'حدث خطأ في الاتصال، حاول مرة أخرى';
+      document.getElementById('reloadLoginBtn').classList.remove('hidden');
+      return;
+    } finally {
       loginBtn.disabled = false;
       loginBtn.textContent = 'دخول';
     }
+    saveSession(id, pw);
+    openStudentApp(data);
   });
+
+  function openStudentApp(data) {
+    try { showApp(data); }
+    catch (_) { showLogin('تعذر فتح واجهة التطبيق. اضغط تحديث التطبيق ثم حاول مجددًا.'); }
+  }
 
   // ====== التحقق التلقائي عند فتح التطبيق ======
   async function init() {
@@ -1472,7 +1503,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
         history.replaceState({}, document.title, location.pathname);
         if (data.success) {
           saveSession(urlId, urlPw);
-          showApp(data);
+          openStudentApp(data);
           return;
         }
         showLogin(data.error || 'تعذر تسجيل الدخول من الباركود');
@@ -1490,7 +1521,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
       try {
         const data = await studentLogin(session.id, session.pw);
         if (data.success) {
-          showApp(data);
+          openStudentApp(data);
           return;
         }
         clearSession();
@@ -1604,8 +1635,7 @@ const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hewaya-supabase/apps
     finally { button.disabled = false; button.textContent = 'إعادة المحاولة'; }
   });
   document.getElementById('pointsLoginBtn').addEventListener('click', async () => {
-    if(window.hawayaPush)await window.hawayaPush.disconnect();
-    localStorage.removeItem(SESSION_KEY);
+    await clearSession();
     if (window.resetStudentSocial) window.resetStudentSocial();
     showLogin('سجّل الدخول مجددًا لعرض نقاطك');
   });

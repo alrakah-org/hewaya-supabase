@@ -9,7 +9,11 @@
   document.body.appendChild(dialog);
   const toggle=dialog.querySelector('.push-toggle'),status=dialog.querySelector('.push-status'),close=dialog.querySelector('.push-close');
   dialog.querySelector('.push-description').textContent=config.role==='student'?'فعّل الإشعارات لتصلك تنبيهات عند تعديل نقاطك، ونشر تغريدة في مرحلتك، ووصول رسالة في مجموعتك.':'فعّل الإشعارات لتصلك تنبيهات بالتغريدات ورسائل المجموعات في جميع المراحل.';
-  close.onclick=()=>dialog.close();
+  function closeDialog(){
+    if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');
+    dialog.classList.remove('push-reminder');
+  }
+  close.onclick=closeDialog;
   const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
   const supported=()=>('serviceWorker'in navigator)&&('PushManager'in window)&&('Notification'in window)&&!!store;
@@ -24,15 +28,28 @@
     else if(!supported()){toggle.disabled=true;status.textContent='هذا المتصفح لا يدعم إشعارات التطبيق. جرّب متصفحًا حديثًا.';}
     else if(Notification.permission==='denied'){toggle.disabled=true;status.textContent='الإشعارات محظورة. اسمح بها لهواية من إعدادات المتصفح أو الجهاز ثم أعد فتح التطبيق.';}
   }
-  function openDialog(){
+  function openDialog(modal=true){
     reminderOwner=owner();
-    if(!dialog.open)dialog.showModal();
+    if(dialog.open){
+      if(modal&&dialog.classList.contains('push-reminder'))closeDialog();
+      else return;
+    }
+    if(modal&&typeof dialog.showModal==='function')dialog.showModal();
+    else {
+      dialog.classList.add('push-reminder');
+      if(typeof dialog.show==='function')dialog.show();else dialog.setAttribute('open','');
+    }
   }
   function remind(){
     const currentOwner=owner();
     if(!currentOwner||!config.loggedIn()||enabled||busy||document.visibilityState==='hidden'||reminderOwner===currentOwner)return;
-    draw();openDialog();
+    draw();openDialog(config.role!=='student');
   }
+  // Automatic student reminders must not make the bottom navigation inert.
+  // A navigation tap dismisses this visit's reminder; the bell opens settings.
+  document.addEventListener('click',event=>{
+    if(config.role==='student'&&dialog.classList.contains('push-reminder')&&event.target.closest('.nav-btn'))closeDialog();
+  });
   async function checkReminder(){
     const currentOwner=owner();
     if(!currentOwner||!config.loggedIn()||busy||syncTask)return;
@@ -93,7 +110,7 @@
     draw('الإشعارات مفعّلة على هذا الجهاز.');
   }
   async function onLogin(){
-    if(!owner()){reminderOwner='';if(dialog.open)dialog.close();if(supported())await disconnect();return;}
+    if(!owner()){reminderOwner='';if(dialog.open)closeDialog();if(supported())await disconnect();return;}
     if(!config.loggedIn())return;
     if(!supported()){enabled=false;remind();return;}
     if(syncTask||busy)return syncTask;

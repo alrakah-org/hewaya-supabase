@@ -2,6 +2,8 @@
 .push-trigger svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .push-dialog{width:min(360px,calc(100% - 32px));padding:24px;border:1px solid #e7deef;border-radius:22px;background:#fffafc;color:#342447;font-family:inherit;text-align:right;box-shadow:0 18px 60px #35286835}
 .push-dialog::backdrop{background:#24163380}
+.push-dialog:not([open]){display:none}
+.push-dialog.push-reminder[open]{display:block;position:fixed;inset:auto 0 calc(var(--nav-h,74px) + 12px);margin:0 auto;z-index:55;max-height:calc(100vh - 170px);overflow-y:auto}
 .push-dialog h2{margin:0 0 12px;color:#4b2f70;font-size:1.2rem}
 .push-dialog p{font-size:.85rem;line-height:1.9;margin:10px 0 18px}
 .push-dialog button{font-size:.9rem;padding:11px 18px;margin-top:9px}
