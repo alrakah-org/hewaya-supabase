@@ -651,6 +651,20 @@
 
     <!-- ============ 0) رصيد الطلاب ============ -->
     <div class="page-panel" data-page="0">
+      <div class="card" id="pointsMultiplierCard">
+        <div class="section-title">✖️ مضاعفة نقاط المرحلة</div>
+        <div class="section-sub">تضاعف النقاط الجديدة فقط للمرحلة المحددة، دون تغيير النقاط السابقة.</div>
+        <label for="pointsMultiplierStage">المرحلة</label>
+        <select id="pointsMultiplierStage">
+          <option value="">اختر المرحلة</option>
+          <option value="elementary_456">ابتدائي</option>
+          <option value="middle">متوسط</option>
+          <option value="secondary">ثانوي</option>
+        </select>
+        <div id="pointsMultiplierState" style="margin:12px 0;color:var(--text-muted);font-weight:700;">اختر المرحلة لعرض الحالة</div>
+        <button type="button" id="pointsMultiplierToggle" disabled>تشغيل مضاعفة النقاط ×2</button>
+        <p id="pointsMultiplierStatus" role="status" style="margin:10px 0 0;font-size:.85rem;"></p>
+      </div>
 
       <!-- القائمة (افتراضي) -->
       <div id="balanceListView">
@@ -1203,6 +1217,55 @@
      بدائل النوافذ المنبثقة (confirm/alert) — زر "تأكيد" يطلع جنب الزر
      الأصلي مباشرة بدل أي نافذة منبثقة أو تنبيه عائم
      ==================================================================== */
+  // ===== مضاعفة النقاط حسب المرحلة =====
+  const multiplierStageSelect = document.getElementById('pointsMultiplierStage');
+  const multiplierToggle = document.getElementById('pointsMultiplierToggle');
+  const multiplierState = document.getElementById('pointsMultiplierState');
+  const multiplierStatus = document.getElementById('pointsMultiplierStatus');
+  let multiplierEnabled = false;
+
+  async function loadPointsMultiplier() {
+    const stage = multiplierStageSelect.value;
+    multiplierToggle.disabled = true;
+    multiplierStatus.textContent = '';
+    if (!stage) {
+      multiplierState.textContent = 'اختر المرحلة لعرض الحالة';
+      multiplierToggle.textContent = 'تشغيل مضاعفة النقاط ×2';
+      return;
+    }
+    multiplierState.textContent = 'جارٍ تحميل الحالة...';
+    try {
+      const result = await callAppsScript({ action: 'getPointsMultiplier', stage });
+      if (!result.success) throw new Error(result.error || 'تعذر تحميل الحالة');
+      multiplierEnabled = !!result.enabled;
+      multiplierState.textContent = multiplierEnabled ? 'المضاعفة مفعّلة لهذه المرحلة' : 'المضاعفة متوقفة لهذه المرحلة';
+      multiplierState.style.color = multiplierEnabled ? 'var(--success)' : 'var(--text-muted)';
+      multiplierToggle.textContent = multiplierEnabled ? 'إيقاف مضاعفة النقاط' : 'تشغيل مضاعفة النقاط ×2';
+      multiplierToggle.disabled = false;
+    } catch (error) {
+      multiplierState.textContent = error.message || 'تعذر تحميل الحالة';
+    }
+  }
+
+  multiplierStageSelect.addEventListener('change', loadPointsMultiplier);
+  multiplierToggle.addEventListener('click', async () => {
+    const stage = multiplierStageSelect.value;
+    if (!stage) return;
+    multiplierToggle.disabled = true;
+    multiplierStatus.textContent = 'جارٍ حفظ التغيير...';
+    try {
+      const result = await callAppsScript({ action: 'setPointsMultiplier', stage, enabled: !multiplierEnabled });
+      if (!result.success) throw new Error(result.error || 'تعذر حفظ التغيير');
+      multiplierStatus.style.color = 'var(--success)';
+      multiplierStatus.textContent = result.enabled ? 'تم تشغيل المضاعفة لهذه المرحلة' : 'تم إيقاف المضاعفة لهذه المرحلة';
+      await loadPointsMultiplier();
+    } catch (error) {
+      multiplierStatus.style.color = 'var(--error)';
+      multiplierStatus.textContent = error.message || 'تعذر حفظ التغيير';
+      multiplierToggle.disabled = false;
+    }
+  });
+
   function showInlineConfirm(triggerBtn, onConfirm) {
     if (triggerBtn.dataset.confirming === '1') return;
     triggerBtn.dataset.confirming = '1';
