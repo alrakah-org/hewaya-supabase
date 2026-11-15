@@ -1,7 +1,7 @@
 /* Installation is independent of login/API initialization. */
 (() => {
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=push-20261015',{updateViaCache:'none'}).catch(() => {}));
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=points-multiplier-20261115',{updateViaCache:'none'}).catch(() => {}));
   }
   const key = 'hawaya-supervisor-installed';
   let promptEvent = null;
